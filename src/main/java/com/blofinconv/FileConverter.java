@@ -7,38 +7,40 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 
 public class FileConverter {
     private DefaultTableModel tableModel;
+    private FileHandler handler=new FileHandler();
     private JTable table;
-    private ArrayList<String> fileRows=new ArrayList<String>();
-    private String defaultPath="c:/temp/testing";
+    private FileHandler.FileAndData handledFile=new FileHandler.FileAndData();
+    private String defaultPath = "";
     private String sourceHeader = "Underlying Asset,Order Time,Side,Avg Fill,Price,Filled,Total,Fee,Order Options,Status";
-    private int[] sourceHeaderWidths = {150,300,30,150,150,150,150,150,150,30,30};
+    private int[] sourceHeaderWidths = {150, 300, 30, 150, 150, 150, 150, 150, 150, 30, 30};
     private String destHeader = "Koinly Date,Pair,Side,Amount,Total,Fee Amount,Fee Currency,Order ID,Trade ID";
-    private String selText = "Select file";
+    private String stTxt = "Status:";
     private String impText = "Import file";
-    private JTextField statusBar=new JTextField();
+    private JTextField statusBar = new JTextField(stTxt,30);
 
     JPanel topPanel;
     JPanel centrePanel;
     JPanel bottomPanel;
     // Placeholder class for file conversion logic
 
-        public void run(String[] args) {
+    public void run(String[] args) {
+
+        if (args!=null && args[0].startsWith("-dp")) {
+            defaultPath=args[0].substring(3);
+        }
         JFrame frame = new JFrame("File Converter");
         frame.setLayout(new BorderLayout());
         frame.setSize(new Dimension(1200, 700));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        topPanel=configureTopPanel(frame);
+        topPanel = configureTopPanel(frame);
         frame.add(topPanel, BorderLayout.PAGE_START);
-        centrePanel=configureCentrePanel(frame);
+        centrePanel = configureCentrePanel(frame);
         frame.add(centrePanel, BorderLayout.CENTER);
-        bottomPanel=configureBottomPanel(frame);
+        bottomPanel = configureBottomPanel(frame);
         frame.add(bottomPanel, BorderLayout.PAGE_END);
         //frame.pack();
         frame.setVisible(true);
@@ -49,58 +51,72 @@ public class FileConverter {
         JPanel topPanel = new JPanel();
         topPanel.setBackground(new Color(50, 100, 150));
         JLabel msg = new JLabel("Selected File:");
-        JTextField textBox = new JTextField(20);
-        JButton selectButton = new JButton(selText);
+        JTextField txtFileName = new JTextField(40);
+        JButton importButton = new JButton(impText);
         JButton cancelButton = new JButton("Cancel");
         JCheckBox overwrite = new JCheckBox("overwrite ");
         JLabel srcTableLabel = new JLabel("Source file:");
 
         topPanel.add(msg);
-        topPanel.add(textBox);
-        topPanel.add(selectButton);
+        topPanel.add(txtFileName);
+        topPanel.add(importButton);
         topPanel.add(cancelButton);
-//        topPanel.setSize(new Dimension(.getSize().width, 100));
         topPanel.setVisible(true);
 
-        selectButton.addActionListener(new ActionListener() {
+        importButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if (selectButton.getText().equals(selText)) {
-                    JFileChooser fileChooser = new JFileChooser(defaultPath);
-                    int result = fileChooser.showOpenDialog(frame);
-                    if (result == JFileChooser.APPROVE_OPTION) {
-                        File selectedFile = fileChooser.getSelectedFile();
-                        textBox.setText(selectedFile.getAbsolutePath());
-                        statusBar.setText("Status: Ready");
-                        statusBar.setForeground(Color.BLACK);
-                        selectButton.setText(impText);
-                    }
-                } else {
+                if (handledFile.outRows.size()>0) {
+                    String[] options = new String[]{"Merge files", "Save old file 1st", "Cancel"};
+                    int result = JOptionPane.showOptionDialog(null, "Previous file not saved", "Alert",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                            null, options, options[2]);
 
-                    String row = "";
-                    String[] record = new String[11];
-                    for (int i = 0; i < fileRows.size(); i++) {
-                        record = fileRows.get(i).split(",");
-                        if (i == 0 && record[0].startsWith("Underlying")) {
-                            //skip
-                        } else {
-                            tableModel.addRow(new Object[]{""});
-                            for (int j = 0; j < record.length; j++) {
-                                tableModel.setValueAt(record[j], tableModel.getRowCount() - 1, j + 1);
-                            }
-                        }
+                    if (result == JOptionPane.DEFAULT_OPTION || result == JOptionPane.CLOSED_OPTION || result ==2) {
+                        return;
+                    } else if (result==1 ) {
+
+                        saveChanges(frame);
+                        handledFile.outRows = new ArrayList<>();
+                        handledFile.srcRows = new ArrayList<>();
                     }
-                    centrePanel.invalidate();
-                    centrePanel.updateUI();
-                    selectButton.setText(selText);
+                }
+                //now prompt to load file
+                JFileChooser fileChooser = new JFileChooser(defaultPath);
+                String newPath;
+                int result = fileChooser.showOpenDialog(frame);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    newPath=selectedFile.getParent();
+                    if (!newPath.equals(defaultPath)) {
+                        //dialog
+                        defaultPath=newPath;
+                    }
+                    txtFileName.setText(selectedFile.getAbsolutePath());
+                    setStatus("Ready");
+                    statusBar.setForeground(Color.BLACK);
+                    importButton.setText(impText);
+                }
+                handledFile =handler.loadFile(txtFileName.getText());
+                handler.convertTradeFile(handledFile,true);
+                handledFile.lastFilename=txtFileName.getText();
+                ArrayList<String> fileRows=handledFile.outRows;
+                String row = "";
+                String[] record = new String[11];
+                for (int i = handledFile.fileType== FileHandler.BLOFIN ? 0: 1; i < fileRows.size(); i++) {
+                    record = fileRows.get(i).split(",");
+                    tableModel.addRow(new Object[]{""});
+                    for (int j = 0; j < record.length; j++) {
+                        tableModel.setValueAt(record[j], tableModel.getRowCount() - 1, j + 1);
+                        }
                 }
             }
         });
 
         cancelButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                textBox.setText("");
-                selectButton.setText(selText);
-                statusBar.setText("Status: Ready");
+                txtFileName.setText("");
+                importButton.setText(impText);
+                setStatus("Ready");
                 statusBar.setForeground(Color.BLACK);
             }
         });
@@ -109,7 +125,7 @@ public class FileConverter {
     }
 
     public JPanel configureCentrePanel(JFrame frame) {
-        JPanel centrePanel=new JPanel(new BorderLayout());
+        JPanel centrePanel = new JPanel(new BorderLayout());
         centrePanel.setBackground(new Color(50, 50, 50));
         // Create the table model
         tableModel = new DefaultTableModel() {
@@ -120,16 +136,19 @@ public class FileConverter {
             }
         };
         //scrollPane.setSize(new Dimension(1184,frame.getHeight()-80));
-         table = new JTable(tableModel);
+        table = new JTable(tableModel);
         table.setFillsViewportHeight(true);
+        tableModel.addColumn("Delete");
+        ButtonColumn buttonColumn = new ButtonColumn(table, deleteButton, 0);
+//    buttonColumn.setMnemonic(KeyEvent.VK_D);
+
         //table.setPreferredSize(new Dimension(frame.getWidth(),frame.getHeight()));
         // Add a column for the delete button
-        tableModel.addColumn("Delete");
-      //  table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[0]);
-        String[] cols = sourceHeader.split(",");
+        //  table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[0]);
+        String[] cols = FileHandler.TRADECOLS;
         for (int i = 0; i < cols.length - 2; i++) {
             tableModel.addColumn(cols[i].trim());
-        //    table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[i+1]);
+            //    table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[i+1]);
 
         }
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -146,7 +165,13 @@ public class FileConverter {
     }
 
     public JPanel configureBottomPanel(JFrame frame) {
-        JPanel bottomPanel=new JPanel();
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bottomPanel.setBackground(new Color(200, 100, 50));
+        statusBar.setBackground(new Color(200, 100, 50));
+        statusBar.setForeground(new Color(255, 255, 255));
+        statusBar.setMinimumSize(new Dimension(300, 20));
+        bottomPanel.add(statusBar);
+
         // Add the "Add Row" button
         JButton addRowButton = new JButton("Add Row");
         addRowButton.addActionListener(new ActionListener() {
@@ -168,18 +193,28 @@ public class FileConverter {
                 saveChanges();
             }
         });
-        bottomPanel.add(statusBar);
         bottomPanel.add(saveButton);
         //bottomPanel.setSize(new Dimension(frame.getSize().width,100));
         bottomPanel.setVisible(true);
         return bottomPanel;
     }
-    public  String doConversion(String filePath, boolean overwrite) {
 
-        return new Convert().convert(filePath,overwrite);
+//    public String doConversion(String filePath, boolean overwrite) {
+//
+//        return new FileHandler().convert(filePath, overwrite);
+//    }
+
+    public void setStatus(String txt) {
+        statusBar.setText(String.join(stTxt, txt));
+    }
+
+    private void saveChanges(JFrame frame) {
+        handledFile.isMultipart=false;
+        JFileChooser fileChooser = new JFileChooser(defaultPath);
+        int result = fileChooser.showSaveDialog(frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            handler.writeFile(handledFile);
         }
-
-    private void saveChanges() {
         // Get the modified data from the table model
         // Write it to a new CSV file (e.g., "original.csv.changed.csv")
         // Remember to handle exceptions and file paths appropriately
@@ -196,6 +231,15 @@ public class FileConverter {
 //            e.printStackTrace();
 //        }
     }
+
+
+    Action deleteButton = new AbstractAction() {
+        public void actionPerformed(ActionEvent e) {
+            JTable table = (JTable) e.getSource();
+            int modelRow = Integer.valueOf(e.getActionCommand());
+            ((DefaultTableModel) table.getModel()).removeRow(modelRow);
+        }
+    };
 
     private void addBlankRow() {
         // Add a blank row to the table

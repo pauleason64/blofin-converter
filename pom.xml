@@ -98,7 +98,7 @@
             <configuration>
                 <archive>
                     <manifest>
-                        <mainClass>com.blofinconv.MyApp</mainClass>
+                        <mainClass>com.blofinconv.FileConverter</mainClass>
                     </manifest>
                 </archive>
                 <descriptorRefs>
@@ -135,7 +135,7 @@
                 <manifest>
                     <addClasspath>true</addClasspath>
                     <classpathPrefix>{$target}/lib/</classpathPrefix>
-                    <mainClass>com.blofinconv.MyApp</mainClass>
+                    <mainClass>com.blofinconv.FileConverter</mainClass>
                 </manifest>
             </archive>
         </configuration>
