@@ -1,4 +1,4 @@
-package com.blofinconv;
+package com.peason.blofin2koinly;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -7,14 +7,24 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.util.ArrayList;
+import java.util.logging.*;
 
 public class FileConverter {
+    static Logger logger = Logger.getLogger(FileConverter.class.getName());
+    static String separator = FileSystems.getDefault().getSeparator();
+    private boolean batchMode = false;      //todo next version
     private DefaultTableModel tableModel;
     private FileHandler handler=new FileHandler();
+    private JTextField txtFileName;
     private JTable table;
     private FileHandler.FileAndData handledFile=new FileHandler.FileAndData();
-    private String defaultPath = "";
+    private String defaultSourceFilePath = "";
+    private String defaultDestFilePath = "";
+    private String defaultLogFilePath ="";
     private String sourceHeader = "Underlying Asset,Order Time,Side,Avg Fill,Price,Filled,Total,Fee,Order Options,Status";
     private int[] sourceHeaderWidths = {150, 300, 30, 150, 150, 150, 150, 150, 150, 30, 30};
     private String destHeader = "Koinly Date,Pair,Side,Amount,Total,Fee Amount,Fee Currency,Order ID,Trade ID";
@@ -27,11 +37,8 @@ public class FileConverter {
     JPanel bottomPanel;
     // Placeholder class for file conversion logic
 
-    public void run(String[] args) {
+    public void run() {
 
-        if (args!=null && args[0].startsWith("-dp")) {
-            defaultPath=args[0].substring(3);
-        }
         JFrame frame = new JFrame("File Converter");
         frame.setLayout(new BorderLayout());
         frame.setSize(new Dimension(1200, 700));
@@ -42,16 +49,14 @@ public class FileConverter {
         frame.add(centrePanel, BorderLayout.CENTER);
         bottomPanel = configureBottomPanel(frame);
         frame.add(bottomPanel, BorderLayout.PAGE_END);
-        //frame.pack();
         frame.setVisible(true);
-        System.out.println("width:" + String.valueOf(frame.getWidth()));
     }
 
     public JPanel configureTopPanel(JFrame frame) {
         JPanel topPanel = new JPanel();
         topPanel.setBackground(new Color(50, 100, 150));
         JLabel msg = new JLabel("Selected File:");
-        JTextField txtFileName = new JTextField(40);
+        txtFileName = new JTextField(40);
         JButton importButton = new JButton(impText);
         JButton cancelButton = new JButton("Cancel");
         JCheckBox overwrite = new JCheckBox("overwrite ");
@@ -75,21 +80,22 @@ public class FileConverter {
                         return;
                     } else if (result==1 ) {
 
-                        saveChanges(frame);
-                        handledFile.outRows = new ArrayList<>();
-                        handledFile.srcRows = new ArrayList<>();
+                        validateAndSave(frame);
+                        table=new JTable(tableModel);
+                        table.invalidate();
+                        table.updateUI();
                     }
                 }
                 //now prompt to load file
-                JFileChooser fileChooser = new JFileChooser(defaultPath);
+                JFileChooser fileChooser = new JFileChooser(defaultSourceFilePath);
                 String newPath;
                 int result = fileChooser.showOpenDialog(frame);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     File selectedFile = fileChooser.getSelectedFile();
                     newPath=selectedFile.getParent();
-                    if (!newPath.equals(defaultPath)) {
+                    if (!newPath.equals(defaultSourceFilePath)) {
                         //dialog
-                        defaultPath=newPath;
+                        defaultSourceFilePath =newPath;
                     }
                     txtFileName.setText(selectedFile.getAbsolutePath());
                     setStatus("Ready");
@@ -97,6 +103,7 @@ public class FileConverter {
                     importButton.setText(impText);
                 }
                 handledFile =handler.loadFile(txtFileName.getText());
+                logger.info("Processing file :" + txtFileName.getText());
                 handler.convertTradeFile(handledFile,true);
                 handledFile.lastFilename=txtFileName.getText();
                 ArrayList<String> fileRows=handledFile.outRows;
@@ -140,24 +147,17 @@ public class FileConverter {
         table.setFillsViewportHeight(true);
         tableModel.addColumn("Delete");
         ButtonColumn buttonColumn = new ButtonColumn(table, deleteButton, 0);
-//    buttonColumn.setMnemonic(KeyEvent.VK_D);
-
-        //table.setPreferredSize(new Dimension(frame.getWidth(),frame.getHeight()));
-        // Add a column for the delete button
-        //  table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[0]);
         String[] cols = FileHandler.TRADECOLS;
+
         for (int i = 0; i < cols.length - 2; i++) {
             tableModel.addColumn(cols[i].trim());
-            //    table.getColumnModel().getColumn(0).setPreferredWidth(sourceHeaderWidths[i+1]);
-
         }
+
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setVisible(true);
-        //table.setSize(1176,frame.getHeight()-80);
         setJTableColumnsWidth(table, 1160, 5, 15, 15, 5, 15, 10, 10, 10, 10);
 
         // Add the table to a scroll pane
-        //centrePanel.add(srcTableLabel);
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setVisible(true);
         centrePanel.add(scrollPane, BorderLayout.CENTER);
@@ -181,7 +181,6 @@ public class FileConverter {
             }
         });
 
-        //centrePanel.add(addRowButton);
         bottomPanel.add(addRowButton);
         bottomPanel.setBackground(new Color(200, 100, 50));
 
@@ -190,7 +189,10 @@ public class FileConverter {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                saveChanges();
+                validateAndSave(frame);
+                table=new JTable(tableModel);
+                table.invalidate();
+                table.updateUI();
             }
         });
         bottomPanel.add(saveButton);
@@ -199,41 +201,55 @@ public class FileConverter {
         return bottomPanel;
     }
 
-//    public String doConversion(String filePath, boolean overwrite) {
-//
-//        return new FileHandler().convert(filePath, overwrite);
-//    }
-
     public void setStatus(String txt) {
         statusBar.setText(String.join(stTxt, txt));
     }
 
-    private void saveChanges(JFrame frame) {
-        handledFile.isMultipart=false;
-        JFileChooser fileChooser = new JFileChooser(defaultPath);
-        int result = fileChooser.showSaveDialog(frame);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            handler.writeFile(handledFile);
-        }
-        // Get the modified data from the table model
-        // Write it to a new CSV file (e.g., "original.csv.changed.csv")
-        // Remember to handle exceptions and file paths appropriately
-        // ...
+    private void resetFileHandler() {
 
-        // Example: Save to "original.csv.changed.csv"
-//        File outputFile = new File("original.csv.changed.csv");
-//        try (Writer writer = new FileWriter(outputFile);
-//             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-//            for (int row = 0; row < tableModel.getRowCount(); row++) {
-//                csvPrinter.printRecord(tableModel.getDataVector().elementAt(row));
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        handledFile.isMultipart=false;
+        handledFile.outRows= new ArrayList<>();
+        handledFile.srcRows=new ArrayList<>();
+        handledFile.lastFilename="";
+        handledFile.isDirty=false;
+        txtFileName.setText("");
     }
 
+    private int validateAndSave(JFrame frame) {
+        int  result = -1, resultOK = 0, resultCancel = -2;
+        String outfileName = handler.fileNameWithoutExt(handledFile.lastFilename).concat("converted.csv");
+        handledFile.isMultipart = false;
+        while (result != resultOK && result != resultCancel) {
+            JFileChooser fileChooser = new JFileChooser(outfileName);
+            fileChooser.setSelectedFile(new File(outfileName));
+            result = fileChooser.showSaveDialog(frame);
+            if (result == JFileChooser.CANCEL_OPTION || result != JFileChooser.APPROVE_OPTION) {
+                result = resultCancel;
+                continue;
+            }
+            outfileName=fileChooser.getSelectedFile().getAbsolutePath();
+            if (new File(outfileName).exists()) {
+                result = JOptionPane.showConfirmDialog(frame, "File " + fileChooser.getSelectedFile().getName() + "exists, overwrite?",
+                        "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if (result == JOptionPane.NO_OPTION) {
+                    continue; //ask again
+                } else if (result == JOptionPane.CLOSED_OPTION) {
+                    result = resultCancel;
+                }
+            }
+            //todo - handler errors
+            handler.writeFile(handledFile, outfileName);
+            defaultDestFilePath= new File(outfileName).getParent().toString();
+            logger.info("default destination path updated to: "+ defaultDestFilePath);
+            setStatus(fileChooser.getSelectedFile().getName() + " Saved.");
+            resetFileHandler();
+            result = resultOK;
+        }
+        if (result == resultCancel) setStatus("Canceled. File not saved");
+        return result;
+    }
 
-    Action deleteButton = new AbstractAction() {
+    private Action deleteButton = new AbstractAction() {
         public void actionPerformed(ActionEvent e) {
             JTable table = (JTable) e.getSource();
             int modelRow = Integer.valueOf(e.getActionCommand());
@@ -262,7 +278,77 @@ public class FileConverter {
                     (tablePreferredWidth * (percentages[i] / total)));
         }
     }
+
+    private boolean processArgs(String[] args) {
+        String arg;
+        for (int i=0; i<args.length; i++) {
+            arg=args[i];
+            if (arg.startsWith("-b")) {
+                batchMode=true;
+            }
+            if (arg.startsWith("-sp")) {
+                defaultSourceFilePath=arg.substring(3);
+                logger.info("default source from args:"+ defaultSourceFilePath);
+            }
+            if (arg.startsWith("-dp")) {
+                defaultDestFilePath=arg.substring(3);
+                logger.info("default destination from args:"+ defaultDestFilePath);
+
+            }
+            if (arg.startsWith("-lp"))
+            {
+                defaultLogFilePath =arg.substring(3);
+                logger.info("default logfile path from args:"+ defaultLogFilePath);
+            }
+            if (batchMode) {
+                //ensure source and destination provided
+                if (defaultSourceFilePath.equals("") || defaultDestFilePath.equals("")) {
+                    logger.severe("You must provide Source and destination folders for batch mode");
+                    return false;
+                }
+            }
+        }
+        return  true;
+    }
+
+    private  void configureLogging() {
+
+        try {
+            LogManager.getLogManager().readConfiguration(new FileInputStream("b2klogging.properties"));
+        } catch (SecurityException | IOException e1) {
+            e1.printStackTrace();
+        }
+        logger.setLevel(Level.INFO);
+        logger.addHandler(new ConsoleHandler());
+        //logger.addHandler(new StreamHandler());
+        try {
+            //FileHandler file name with max size and number of log files limit
+            String path = defaultLogFilePath.equals("") ?
+                    FileSystems.getDefault().getPath("").toAbsolutePath().toString()+separator :
+                    defaultLogFilePath+separator ;
+            Handler fileHandler = new java.util.logging.FileHandler(path + "b2klogger.log", 2000, 5);
+            fileHandler.setFormatter(new B2Klogging.Formatter());
+            //setting custom filter for FileHandler
+            fileHandler.setFilter(new B2Klogging.Filter());
+            logger.addHandler(fileHandler);
+            logger.log(Level.CONFIG, "Reading and setting logging config");
+        } catch (SecurityException | IOException e) {
+            e.printStackTrace();
+        }
+    }
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FileConverter().run(args));
+        FileConverter fileConverter = new FileConverter();
+//        fileConverter.run();
+
+        if (args.length != 0 && args[0] != null) {
+            if (fileConverter.processArgs(args)) {
+                //config passed
+                fileConverter.configureLogging();
+                logger.info("Starting application..");
+                fileConverter.run();
+            }
+        }
+        logger.info("Closing application..");
     }
 }
+

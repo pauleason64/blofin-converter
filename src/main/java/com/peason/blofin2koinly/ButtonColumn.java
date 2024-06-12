@@ -1,4 +1,4 @@
-package com.blofinconv;
+package com.peason.blofin2koinly;
 
 import java.awt.*;
 import java.awt.event.*;

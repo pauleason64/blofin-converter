@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com</groupId>
-    <artifactId>blofinconv</artifactId>
+    <artifactId>blofin2koinly</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -28,28 +28,17 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.1.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-base</artifactId>
-            <version>17</version> <!-- Choose the appropriate version -->
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>17</version> <!-- Choose the appropriate version -->
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-graphics</artifactId>
-            <version>17</version> <!-- Choose the appropriate version -->
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
-            <version>17</version> <!-- Choose the appropriate version -->
-        </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>.</directory>
+                <includes><include>*.properties</include></includes>
+            </resource>
+        </resources>
     <plugins>
         <plugin>
             <artifactId>maven-resources-plugin</artifactId>
@@ -98,7 +87,7 @@
             <configuration>
                 <archive>
                     <manifest>
-                        <mainClass>com.blofinconv.FileConverter</mainClass>
+                        <mainClass>com.peason.blofin2koinly.FileConverter</mainClass>
                     </manifest>
                 </archive>
                 <descriptorRefs>
@@ -118,7 +107,7 @@
                         <goal>copy-dependencies</goal>
                     </goals>
                     <configuration>
-                        <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        <outputDirectory>target/lib/</outputDirectory>
                         <overWriteReleases>false</overWriteReleases>
                         <overWriteSnapshots>true</overWriteSnapshots>
                         <overWriteIfNewer>true</overWriteIfNewer>
@@ -135,7 +124,7 @@
                 <manifest>
                     <addClasspath>true</addClasspath>
                     <classpathPrefix>{$target}/lib/</classpathPrefix>
-                    <mainClass>com.blofinconv.FileConverter</mainClass>
+                    <mainClass>com.peason.blofin2koinly.FileConverter</mainClass>
                 </manifest>
             </archive>
         </configuration>

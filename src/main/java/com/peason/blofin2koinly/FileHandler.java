@@ -1,17 +1,19 @@
-package com.blofinconv;
+package com.peason.blofin2koinly;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class FileHandler {
+
+    static Logger logger = Logger.getLogger(FileConverter.class.getName());
 
     public static String KOINLY="Koinly";
     public static String BLOFIN="Underl";
     public static String OTHER="Other";
     public static String LOADERR = "le";
     public static String SAVEERR = "se";
-
     public static String[] TRADECOLS = {"Koinly Date","Pair","Side","Amount","Total",	"Fee Amount",	"Fee Currency",	"Order ID",	"Trade ID"};
 
     public static class FileAndData {
@@ -20,9 +22,11 @@ public class FileHandler {
         boolean isMultipart;
         String fileType="";
         String lastFilename="";
+        boolean isDirty = false; //is file is converted then we need to save it
     }
 
     public FileAndData loadFile(String fileName) {
+        logger.info("loading file " + fileName);
         FileAndData fad=new FileAndData();
         ArrayList<String> rows=new ArrayList();
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
@@ -32,7 +36,7 @@ public class FileHandler {
                 rowText = reader.readLine();
             }
         }catch (IOException e) {
-            System.out.println("Error reading the file: " + e.getMessage());
+            logger.warning("Error reading the file: " + e.getMessage());
             return null;
         }
         fad.srcRows=rows;
@@ -47,32 +51,34 @@ public class FileHandler {
                 fad.fileType = OTHER;
                 break;
         }
-
+        logger.info("Read "+ String.valueOf(rows.size()) + " rows for filetype:" +
+                fad.fileType==BLOFIN ? "Blofin" :  fad.fileType==KOINLY ? "Koinly" : "Unsupported");
         return fad;
     }
 
-    public String writeFile(FileAndData fad,String saveFileName) {
+    public String writeFile(FileAndData fad,String outfileName) {
 
         List<String> outrows;
+        logger.info("writing file " + outfileName);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outfileName))) {
-
+                writer.write(String.join(",",TRADECOLS)+System.lineSeparator());
                 for (String row : fad.outRows) {
                     writer.write(row+System.lineSeparator());
                     }
-                    System.out.println("File saved: " + outfileName);
+                    logger.info ("File saved: " + outfileName);
+                    logger.info ("Records saved: " + fad.outRows.size());
                     return "file "+outfileName+"  created.";
+
         } catch (IOException e) {
-            System.out.println("Error reading the file: " + e.getMessage());
-            return null;
+            logger.warning("Error writing the file: " + e.getMessage());
+            return SAVEERR;
         }
-        //never gets here
-            return null;
     }
 
     public  void handleTransactionFile(BufferedReader reader, String ROWDATA, String outfileName) {
         /* add implementation */
         String[] TRANSACTIONS = new String[9]; // Initialize TRANSACTIONS array
-        System.out.println("Handle the remaining columns");
+        logger.info("Handle the remaining columns");
         return;
     }
 
@@ -91,30 +97,35 @@ public class FileHandler {
             TRADEROW = new String[9];
 
             for (rownum=1; rownum <fad.srcRows.size(); rownum++) {
-                ROWDATA = fad.srcRows.get(rownum) + " ";
-                SOURCE = ROWDATA.split(",");
-                fillCurr = SOURCE[6].split(" ")[1];
-                feeCurr = SOURCE[7].split(" ")[1];
-                float usdtEquiv = 0f;
-                float feeAmount = Float.valueOf(SOURCE[7].split(" ")[0]);
-                if (fillCurr.equals("USDT")) {
-                    usdtEquiv = Float.valueOf(SOURCE[6].split(" ")[0]);
+                ROWDATA = fad.srcRows.get(rownum);
+                if (fad.fileType.equals(KOINLY)) {
+                    outRows.add(ROWDATA);
                 } else {
-                    float fillPrice = Float.valueOf(SOURCE[3].split(" ")[0]);
-                    float coins = Float.valueOf(SOURCE[6].split(" ")[0]);
-                    usdtEquiv = (coins * fillPrice) + feeAmount;
+                    SOURCE = ROWDATA.split(",");
+                    fillCurr = SOURCE[6].split(" ")[1];
+                    feeCurr = SOURCE[7].split(" ")[1];
+                    float usdtEquiv = 0f;
+                    float feeAmount = Float.valueOf(SOURCE[7].split(" ")[0]);
+                    if (fillCurr.equals("USDT")) {
+                        usdtEquiv = Float.valueOf(SOURCE[6].split(" ")[0]);
+                    } else {
+                        float fillPrice = Float.valueOf(SOURCE[3].split(" ")[0]);
+                        float coins = Float.valueOf(SOURCE[6].split(" ")[0]);
+                        usdtEquiv = (coins * fillPrice) + feeAmount;
+                        logger.info("Row:"+ String.valueOf(rownum)+" USDT amount set to "+String.valueOf(usdtEquiv));
+                    }
+                    TRADEROW[0] = SOURCE[1];
+                    TRADEROW[1] = SOURCE[0].replace("/", "-");
+                    TRADEROW[2] = SOURCE[2];
+                    TRADEROW[3] = SOURCE[5].split(" ")[0];
+                    TRADEROW[4] = String.valueOf(usdtEquiv);
+                    TRADEROW[5] = String.valueOf(feeAmount);
+                    TRADEROW[6] = feeCurr;
+                    TRADEROW[7] = "";
+                    TRADEROW[8] = "";
+                    outRows.add(String.join(",", TRADEROW));
                 }
-                TRADEROW[0] = SOURCE[1];
-                TRADEROW[1] = SOURCE[0].replace("/", "-");
-                TRADEROW[2] = SOURCE[2];
-                TRADEROW[3] = SOURCE[5].split(" ")[0];
-                TRADEROW[4] = String.valueOf(usdtEquiv);
-                TRADEROW[5] = String.valueOf(feeAmount);
-                TRADEROW[6] = feeCurr;
-                TRADEROW[7] = "";
-                TRADEROW[8] = "";
-                outRows.add(String.join(",", TRADEROW));
-                }
+            }
             } catch (Exception e) {
                 //do nothing;
             }
