@@ -10,14 +10,15 @@ public class FileHandler {
     static Logger logger = Logger.getLogger(FileConverter.class.getName());
 
     public static String KOINLY="Koinly";
-    public static String BLOFIN="Underl";
-    public static String OTHER="Other";
+    public static String BLOFIN="Blofin";
+    public static String OTHER="Currently unsupported";
     public static String LOADERR = "le";
     public static String SAVEERR = "se";
     public static String[] TRADECOLS = {"Koinly Date","Pair","Side","Amount","Total",	"Fee Amount",	"Fee Currency",	"Order ID",	"Trade ID"};
 
     public static class FileAndData {
-        ArrayList<String > srcRows=new ArrayList<>();
+        ArrayList<String > existingSrcRows =new ArrayList<>();
+        ArrayList<String > newSrcRows =new ArrayList<>();
         ArrayList<String > outRows=new ArrayList<>();
         boolean isMultipart;
         String fileType="";
@@ -26,9 +27,12 @@ public class FileHandler {
     }
 
     public FileAndData loadFile(String fileName) {
+        return loadFile(fileName,new FileAndData());
+    }
+
+    public FileAndData loadFile(String fileName,FileAndData fad) {
         logger.info("loading file " + fileName);
-        FileAndData fad=new FileAndData();
-        ArrayList<String> rows=new ArrayList();
+        ArrayList<String> rows=new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String rowText = reader.readLine();
             while (rowText != null) {
@@ -39,7 +43,6 @@ public class FileHandler {
             logger.warning("Error reading the file: " + e.getMessage());
             return null;
         }
-        fad.srcRows=rows;
         switch (rows.get(0).substring(0,6)) {
             case "Underl":
                 fad.fileType =BLOFIN;
@@ -51,12 +54,17 @@ public class FileHandler {
                 fad.fileType = OTHER;
                 break;
         }
+        //assume header row is always present for now , so lets remove it
+        rows.remove(0);
+        //now merge back onto previous rows if any
+        //fad.existingSrcRows.addAll(rows);
+        fad.newSrcRows=rows;
         logger.info("Read "+ String.valueOf(rows.size()) + " rows for filetype:" +
-                fad.fileType==BLOFIN ? "Blofin" :  fad.fileType==KOINLY ? "Koinly" : "Unsupported");
+                fad.fileType);
         return fad;
     }
 
-    public String writeFile(FileAndData fad,String outfileName) {
+    public boolean writeFile(FileAndData fad,String outfileName) {
 
         List<String> outrows;
         logger.info("writing file " + outfileName);
@@ -67,11 +75,11 @@ public class FileHandler {
                     }
                     logger.info ("File saved: " + outfileName);
                     logger.info ("Records saved: " + fad.outRows.size());
-                    return "file "+outfileName+"  created.";
+                    return true;
 
         } catch (IOException e) {
             logger.warning("Error writing the file: " + e.getMessage());
-            return SAVEERR;
+            return false;
         }
     }
 
@@ -96,8 +104,9 @@ public class FileHandler {
             String fillCurr="";
             TRADEROW = new String[9];
 
-            for (rownum=1; rownum <fad.srcRows.size(); rownum++) {
-                ROWDATA = fad.srcRows.get(rownum);
+            for (rownum=0; rownum <fad.newSrcRows.size(); rownum++) {
+                ROWDATA = fad.newSrcRows.get(rownum);
+
                 if (fad.fileType.equals(KOINLY)) {
                     outRows.add(ROWDATA);
                 } else {

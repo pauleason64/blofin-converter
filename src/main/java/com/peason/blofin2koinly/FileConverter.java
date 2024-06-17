@@ -16,12 +16,14 @@ import java.util.logging.*;
 public class FileConverter {
     static Logger logger = Logger.getLogger(FileConverter.class.getName());
     static String separator = FileSystems.getDefault().getSeparator();
-    private boolean batchMode = false;      //todo next version
+    private boolean batchMode = false;
+    private boolean ignoreNonEmptyDestFolder = false;
+    private boolean deleteFileAfterCopy = false;
     private DefaultTableModel tableModel;
     private FileHandler handler=new FileHandler();
     private JTextField txtFileName;
     private JTable table;
-    private FileHandler.FileAndData handledFile=new FileHandler.FileAndData();
+    private FileHandler.FileAndData handledFileAndData =new FileHandler.FileAndData();
     private String defaultSourceFilePath = "";
     private String defaultDestFilePath = "";
     private String defaultLogFilePath ="";
@@ -69,55 +71,41 @@ public class FileConverter {
         topPanel.setVisible(true);
 
         importButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                if (handledFile.outRows.size()>0) {
-                    String[] options = new String[]{"Merge files", "Save old file 1st", "Cancel"};
-                    int result = JOptionPane.showOptionDialog(null, "Previous file not saved", "Alert",
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
-                            null, options, options[2]);
+               public void actionPerformed(ActionEvent e) {
+                   if (handledFileAndData.existingSrcRows.size() > 0) {
+                       String[] options = new String[]{"Merge files", "Save old file 1st", "Cancel"};
+                       int result = JOptionPane.showOptionDialog(null, "Previous file not saved", "Alert",
+                               JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                               null, options, options[2]);
 
-                    if (result == JOptionPane.DEFAULT_OPTION || result == JOptionPane.CLOSED_OPTION || result ==2) {
-                        return;
-                    } else if (result==1 ) {
+                       if (result == JOptionPane.DEFAULT_OPTION || result == JOptionPane.CLOSED_OPTION || result == 2) {
+                           return;
+                       } else if (result == 1) {
 
-                        validateAndSave(frame);
-                        table=new JTable(tableModel);
-                        table.invalidate();
-                        table.updateUI();
-                    }
-                }
-                //now prompt to load file
-                JFileChooser fileChooser = new JFileChooser(defaultSourceFilePath);
-                String newPath;
-                int result = fileChooser.showOpenDialog(frame);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    newPath=selectedFile.getParent();
-                    if (!newPath.equals(defaultSourceFilePath)) {
-                        //dialog
-                        defaultSourceFilePath =newPath;
-                    }
-                    txtFileName.setText(selectedFile.getAbsolutePath());
-                    setStatus("Ready");
-                    statusBar.setForeground(Color.BLACK);
-                    importButton.setText(impText);
-                }
-                handledFile =handler.loadFile(txtFileName.getText());
-                logger.info("Processing file :" + txtFileName.getText());
-                handler.convertTradeFile(handledFile,true);
-                handledFile.lastFilename=txtFileName.getText();
-                ArrayList<String> fileRows=handledFile.outRows;
-                String row = "";
-                String[] record = new String[11];
-                for (int i = handledFile.fileType== FileHandler.BLOFIN ? 0: 1; i < fileRows.size(); i++) {
-                    record = fileRows.get(i).split(",");
-                    tableModel.addRow(new Object[]{""});
-                    for (int j = 0; j < record.length; j++) {
-                        tableModel.setValueAt(record[j], tableModel.getRowCount() - 1, j + 1);
-                        }
-                }
-            }
-        });
+                           validateAndSave(frame);
+                           table = new JTable(tableModel);
+                           table.invalidate();
+                           table.updateUI();
+                       }
+                   }
+                   //now prompt to load file
+                   JFileChooser fileChooser = new JFileChooser(defaultSourceFilePath);
+                   String newPath;
+                   int result = fileChooser.showOpenDialog(frame);
+                   if (result == JFileChooser.APPROVE_OPTION) {
+                       File selectedFile = fileChooser.getSelectedFile();
+                       newPath = selectedFile.getParent();
+                       if (!newPath.equals(defaultSourceFilePath)) defaultSourceFilePath = newPath;
+                       txtFileName.setText(selectedFile.getAbsolutePath());
+                       setStatus("Ready");
+                       statusBar.setForeground(Color.BLACK);
+                       importButton.setText(impText);
+                       //if user chose merge, pass the existing object to the loader
+                       //todo Fix bug with using old file data and fix issue with table not clearing
+                       processSelectedFile(selectedFile);
+                   }
+               }
+           });
 
         cancelButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -129,6 +117,37 @@ public class FileConverter {
         });
 
         return topPanel;
+    }
+
+    private void processSelectedFile(File selectedFile) {
+        if (handledFileAndData.existingSrcRows.size()==0) {
+            handledFileAndData = handler.loadFile(selectedFile.getAbsolutePath());
+        } else {
+            handledFileAndData = handler.loadFile(selectedFile.getAbsolutePath(), handledFileAndData);
+        }
+        logger.info("Processing file :" + selectedFile.getAbsolutePath());
+        //update the table model - this should be clean data with headers removed
+        if (!batchMode) ((DefaultTableModel)table.getModel()).setRowCount(0);
+        handler.convertTradeFile(handledFileAndData,true);
+        handledFileAndData.lastFilename=selectedFile.getAbsolutePath();
+        if (!batchMode) {
+            ArrayList<String> rowsForTable = handledFileAndData.outRows;
+            String row = "";
+            String[] record = new String[11];
+            for (int i = handledFileAndData.fileType == FileHandler.BLOFIN ? 0 : 1; i < rowsForTable.size(); i++) {
+                record = rowsForTable.get(i).split(",");
+                tableModel.addRow(new Object[]{""});
+                for (int j = 0; j < record.length; j++) {
+                    tableModel.setValueAt(record[j], tableModel.getRowCount() - 1, j + 1);
+                }
+            }
+            if (handledFileAndData.newSrcRows.size() == 0) {
+                setStatus("No qualifying records found in file:" + selectedFile.getName());
+                return;
+            }
+        }
+        handledFileAndData.existingSrcRows.addAll(handledFileAndData.newSrcRows);
+        handledFileAndData.newSrcRows=new ArrayList<>();
     }
 
     public JPanel configureCentrePanel(JFrame frame) {
@@ -202,23 +221,28 @@ public class FileConverter {
     }
 
     public void setStatus(String txt) {
+        if (batchMode) {
+            logger.info(stTxt);
+            return;
+        }
         statusBar.setText(String.join(stTxt, txt));
     }
 
     private void resetFileHandler() {
 
-        handledFile.isMultipart=false;
-        handledFile.outRows= new ArrayList<>();
-        handledFile.srcRows=new ArrayList<>();
-        handledFile.lastFilename="";
-        handledFile.isDirty=false;
-        txtFileName.setText("");
+        handledFileAndData.isMultipart=false;
+        handledFileAndData.outRows= new ArrayList<>();
+        handledFileAndData.existingSrcRows =new ArrayList<>();
+        handledFileAndData.newSrcRows =new ArrayList<>();
+        handledFileAndData.lastFilename="";
+        handledFileAndData.isDirty=false;
+
     }
 
     private int validateAndSave(JFrame frame) {
         int  result = -1, resultOK = 0, resultCancel = -2;
-        String outfileName = handler.fileNameWithoutExt(handledFile.lastFilename).concat("converted.csv");
-        handledFile.isMultipart = false;
+        String outfileName = handler.fileNameWithoutExt(handledFileAndData.lastFilename).concat("converted.csv");
+        handledFileAndData.isMultipart = false;
         while (result != resultOK && result != resultCancel) {
             JFileChooser fileChooser = new JFileChooser(outfileName);
             fileChooser.setSelectedFile(new File(outfileName));
@@ -227,7 +251,7 @@ public class FileConverter {
                 result = resultCancel;
                 continue;
             }
-            outfileName=fileChooser.getSelectedFile().getAbsolutePath();
+            outfileName = fileChooser.getSelectedFile().getAbsolutePath();
             if (new File(outfileName).exists()) {
                 result = JOptionPane.showConfirmDialog(frame, "File " + fileChooser.getSelectedFile().getName() + "exists, overwrite?",
                         "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
@@ -238,7 +262,7 @@ public class FileConverter {
                 }
             }
             //todo - handler errors
-            handler.writeFile(handledFile, outfileName);
+            handler.writeFile(handledFileAndData, outfileName);
             defaultDestFilePath= new File(outfileName).getParent().toString();
             logger.info("default destination path updated to: "+ defaultDestFilePath);
             setStatus(fileChooser.getSelectedFile().getName() + " Saved.");
@@ -285,20 +309,31 @@ public class FileConverter {
             arg=args[i];
             if (arg.startsWith("-b")) {
                 batchMode=true;
+                if (arg.contains("i")) ignoreNonEmptyDestFolder=true;
+                continue;
             }
+            if (arg.startsWith("-del")) {
+                deleteFileAfterCopy=true;
+                logger.info("deleting files after use per args:");
+                continue;
+            }
+
             if (arg.startsWith("-sp")) {
                 defaultSourceFilePath=arg.substring(3);
                 logger.info("default source from args:"+ defaultSourceFilePath);
+                continue;
             }
             if (arg.startsWith("-dp")) {
                 defaultDestFilePath=arg.substring(3);
                 logger.info("default destination from args:"+ defaultDestFilePath);
+                continue;
 
             }
             if (arg.startsWith("-lp"))
             {
                 defaultLogFilePath =arg.substring(3);
                 logger.info("default logfile path from args:"+ defaultLogFilePath);
+                continue;
             }
             if (batchMode) {
                 //ensure source and destination provided
@@ -306,9 +341,54 @@ public class FileConverter {
                     logger.severe("You must provide Source and destination folders for batch mode");
                     return false;
                 }
+                processBatch();
+                return false;
             }
+
         }
         return  true;
+    }
+
+    private void processBatch() { //throws IOException
+        File src = new File(defaultSourceFilePath);
+        File dst = new File(defaultDestFilePath);
+        if (!src.isDirectory()) {
+            logger.severe("Source :" + src.getAbsolutePath().toString() + " is not a directory");
+            return;
+        }
+        if (!dst.isDirectory()) {
+            logger.severe("Dest :" + dst.getAbsolutePath().toString() + " is not a directory");
+            return;
+        }
+        File[] srcFiles = src.listFiles();
+        if (srcFiles.length == 0) {
+            logger.severe("Source :" + src.getAbsolutePath().toString() + " is empty");
+            return;
+        }
+        File[] dstFiles = dst.listFiles();
+        if (dstFiles.length > 0 && !ignoreNonEmptyDestFolder) {
+            logger.severe("Dest :" + dst.getAbsolutePath().toString() + " is not empty and ignore flag not set");
+            return;
+        }
+        int count = 0;
+        for (File file : srcFiles) {
+            if (file.isDirectory() == false) {
+                processSelectedFile(file);
+                String saveFileName = new File(handledFileAndData.lastFilename).getName().concat(".koinly.csv");
+                handler.writeFile(handledFileAndData, defaultDestFilePath+ FileSystems.getDefault().getSeparator()+saveFileName);
+                if (deleteFileAfterCopy) {
+                    logger.info("deleting file: " + file.getName());
+                    file.delete();
+                }
+                resetFileHandler();
+                count++;
+            }
+        }
+        if (count == 0) {
+            logger.severe("Source :" + src.getAbsolutePath().toString() + " contained no useable files");
+        } else {
+            logger.info("processing of batch complete");
+        }
     }
 
     private  void configureLogging() {
@@ -338,17 +418,16 @@ public class FileConverter {
     }
     public static void main(String[] args) {
         FileConverter fileConverter = new FileConverter();
-//        fileConverter.run();
+        if (args.length==0  || fileConverter.processArgs(args)) {
+            //config passed
+            fileConverter.configureLogging();
+            logger.info("Starting application..");
+            fileConverter.run();
+        } else {
+            logger.info("Closing application..");
 
-        if (args.length != 0 && args[0] != null) {
-            if (fileConverter.processArgs(args)) {
-                //config passed
-                fileConverter.configureLogging();
-                logger.info("Starting application..");
-                fileConverter.run();
-            }
         }
-        logger.info("Closing application..");
+        return;
     }
 }
 
