@@ -14,22 +14,24 @@ import java.util.ArrayList;
 import java.util.logging.*;
 
 public class FileConverter {
+    private static final org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(FileConverter.class);
     static Logger logger = Logger.getLogger(FileConverter.class.getName());
     static String separator = FileSystems.getDefault().getSeparator();
-    private boolean batchMode = false;
-    private boolean ignoreNonEmptyDestFolder = false;
-    private boolean deleteFileAfterCopy = false;
+    static boolean batchMode = false;
+    static boolean batchMergeOutput =false;
+    static boolean ignoreNonEmptyDestFolder = false;
+    static boolean deleteFileAfterCopy = false;
+    static String defaultSourceFilePath = "";
+    static String defaultDestFilePath = "";
+    static String defaultLogFilePath ="";
+    static String mergeFileName= "blofin-merged.csv";
+
     private DefaultTableModel tableModel;
     private FileHandler handler=new FileHandler();
     private JTextField txtFileName;
     private JTable table;
     private FileHandler.FileAndData handledFileAndData =new FileHandler.FileAndData();
-    private String defaultSourceFilePath = "";
-    private String defaultDestFilePath = "";
-    private String defaultLogFilePath ="";
-    private String sourceHeader = "Underlying Asset,Order Time,Side,Avg Fill,Price,Filled,Total,Fee,Order Options,Status";
     private int[] sourceHeaderWidths = {150, 300, 30, 150, 150, 150, 150, 150, 150, 30, 30};
-    private String destHeader = "Koinly Date,Pair,Side,Amount,Total,Fee Amount,Fee Currency,Order ID,Trade ID";
     private String stTxt = "Status:";
     private String impText = "Import file";
     private JTextField statusBar = new JTextField(stTxt,30);
@@ -306,45 +308,40 @@ public class FileConverter {
     private boolean processArgs(String[] args) {
         String arg;
         for (int i=0; i<args.length; i++) {
-            arg=args[i];
+            arg = args[i];
             if (arg.startsWith("-b")) {
-                batchMode=true;
-                if (arg.contains("i")) ignoreNonEmptyDestFolder=true;
+                batchMode = true;
+                if (arg.contains("i")) ignoreNonEmptyDestFolder = true;
                 continue;
             }
             if (arg.startsWith("-del")) {
-                deleteFileAfterCopy=true;
+                deleteFileAfterCopy = true;
                 logger.info("deleting files after use per args:");
                 continue;
             }
 
+            if (arg.startsWith("-m")) {
+                batchMergeOutput = true;
+                mergeFileName = arg.length() > 2 ? arg.substring(2) : mergeFileName;
+                continue;
+            }
+
             if (arg.startsWith("-sp")) {
-                defaultSourceFilePath=arg.substring(3);
-                logger.info("default source from args:"+ defaultSourceFilePath);
+                defaultSourceFilePath = arg.substring(3);
+                logger.info("default source from args:" + defaultSourceFilePath);
                 continue;
             }
             if (arg.startsWith("-dp")) {
-                defaultDestFilePath=arg.substring(3);
-                logger.info("default destination from args:"+ defaultDestFilePath);
+                defaultDestFilePath = arg.substring(3);
+                logger.info("default destination from args:" + defaultDestFilePath);
                 continue;
 
             }
-            if (arg.startsWith("-lp"))
-            {
-                defaultLogFilePath =arg.substring(3);
-                logger.info("default logfile path from args:"+ defaultLogFilePath);
+            if (arg.startsWith("-lp")) {
+                defaultLogFilePath = arg.substring(3);
+                logger.info("default logfile path from args:" + defaultLogFilePath);
                 continue;
             }
-            if (batchMode) {
-                //ensure source and destination provided
-                if (defaultSourceFilePath.equals("") || defaultDestFilePath.equals("")) {
-                    logger.severe("You must provide Source and destination folders for batch mode");
-                    return false;
-                }
-                processBatch();
-                return false;
-            }
-
         }
         return  true;
     }
@@ -352,36 +349,46 @@ public class FileConverter {
     private void processBatch() { //throws IOException
         File src = new File(defaultSourceFilePath);
         File dst = new File(defaultDestFilePath);
+        logger.info("Starting new batch");
         if (!src.isDirectory()) {
-            logger.severe("Source :" + src.getAbsolutePath().toString() + " is not a directory");
+            logger.severe("Source :" + src.getAbsolutePath() + " is not a directory");
             return;
         }
         if (!dst.isDirectory()) {
-            logger.severe("Dest :" + dst.getAbsolutePath().toString() + " is not a directory");
+            logger.severe("Dest :" + dst.getAbsolutePath() + " is not a directory");
             return;
         }
         File[] srcFiles = src.listFiles();
         if (srcFiles.length == 0) {
-            logger.severe("Source :" + src.getAbsolutePath().toString() + " is empty");
+            logger.severe("Source :" + src.getAbsolutePath() + " is empty");
             return;
         }
         File[] dstFiles = dst.listFiles();
         if (dstFiles.length > 0 && !ignoreNonEmptyDestFolder) {
-            logger.severe("Dest :" + dst.getAbsolutePath().toString() + " is not empty and ignore flag not set");
+            logger.severe("Dest :" + dst.getAbsolutePath() + " is not empty and ignore flag not set");
             return;
         }
         int count = 0;
+        String saveFileName="";
         for (File file : srcFiles) {
             if (file.isDirectory() == false) {
                 processSelectedFile(file);
-                String saveFileName = new File(handledFileAndData.lastFilename).getName().concat(".koinly.csv");
-                handler.writeFile(handledFileAndData, defaultDestFilePath+ FileSystems.getDefault().getSeparator()+saveFileName);
+                if (batchMergeOutput) { count++; continue; }
+                saveFileName = new File(handledFileAndData.lastFilename).getName().concat(".koinly.csv");
+                handler.writeFile(handledFileAndData, defaultDestFilePath+
+                        FileSystems.getDefault().getSeparator()+saveFileName);
                 if (deleteFileAfterCopy) {
                     logger.info("deleting file: " + file.getName());
                     file.delete();
                 }
                 resetFileHandler();
                 count++;
+            }
+            //now write the merged file is that option was chosen
+            if (batchMergeOutput) {
+                handler.writeFile(handledFileAndData, defaultDestFilePath+
+                        FileSystems.getDefault().getSeparator()+mergeFileName);
+
             }
         }
         if (count == 0) {
@@ -421,11 +428,20 @@ public class FileConverter {
         if (args.length==0  || fileConverter.processArgs(args)) {
             //config passed
             fileConverter.configureLogging();
+            if (batchMode) {
+                //ensure source and destination provided
+                if (defaultSourceFilePath.equals("") || defaultDestFilePath.equals("")) {
+                    logger.severe("You must provide Source and destination folders for batch mode");
+                    return;
+                }
+                fileConverter.processBatch();
+                return;
+            }
+
             logger.info("Starting application..");
             fileConverter.run();
         } else {
             logger.info("Closing application..");
-
         }
         return;
     }

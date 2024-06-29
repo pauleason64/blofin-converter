@@ -21,7 +21,6 @@ public class B2Klogging  {
         @Override
         public String format(LogRecord record) {
             return   new Date(record.getMillis()) + "::"
-                    + record.getSourceClassName() + "::"
                      + record.getSourceMethodName() + "::"
                     + record.getMessage() + "\n";
         }

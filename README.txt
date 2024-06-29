@@ -29,6 +29,7 @@ COMMAND LINE OPTIONS
 -bi         As above plus instructs program to ignore warning if destination folder is not empty
 -sp[path]  Default source path for importing files *
 -dp[path]  Default destination path for the converted files *
+-m[filename*]  Batch Mode - merge all files in source folder into one file. Optional filename (no path) to save as otherwise is saved as blofin-merged.csv
 -lp[path]  Default path for log files *
 -del        Delete files after conversion (batch mode only)
 

@@ -121,7 +121,7 @@ public class FileHandler {
                         float fillPrice = Float.valueOf(SOURCE[3].split(" ")[0]);
                         float coins = Float.valueOf(SOURCE[6].split(" ")[0]);
                         usdtEquiv = (coins * fillPrice) + feeAmount;
-                        logger.info("Row:"+ String.valueOf(rownum)+" USDT amount set to "+String.valueOf(usdtEquiv));
+                        logger.info("Row:"+ String.valueOf(rownum+1)+" USDT amount set to "+String.valueOf(usdtEquiv));
                     }
                     TRADEROW[0] = SOURCE[1];
                     TRADEROW[1] = SOURCE[0].replace("/", "-");
