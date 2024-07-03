@@ -8,7 +8,7 @@ import java.util.logging.LogRecord;
 
 public class B2Klogging  {
 
- static class Filter implements java.util.logging.Filter {
+ public static class Filter implements java.util.logging.Filter {
         @Override
         public boolean isLoggable(LogRecord log) {
             //don't log CONFIG logs in file
@@ -17,7 +17,7 @@ public class B2Klogging  {
         }
     }
 
-    static class Formatter extends java.util.logging.Formatter {
+    public static class Formatter extends java.util.logging.Formatter {
         @Override
         public String format(LogRecord record) {
             return   new Date(record.getMillis()) + "::"
