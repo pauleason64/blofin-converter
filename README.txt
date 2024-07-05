@@ -1,5 +1,5 @@
 The purpose of this program is to support filing your crypto taxes via Koinly for the BLOFIN exchange. Blofin do not have an API and only support a limited csv export file which is not compatible with Koinly.
-Additionally , Blofin file is bugged in that it does not consistently display the USDT amount for a trade, only the crypto pair amount and the USDT rate used in the trade.
+Additionally , Blofin file is bugged in that it does not consistently display the USDT amount for a fiatTrade, only the crypto pair amount and the USDT rate used in the fiatTrade.
 
 This program addresses these issues as follows:
 1) it will reformat the csv file into Koinly format

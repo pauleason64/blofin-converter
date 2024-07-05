@@ -1,13 +1,16 @@
 package com.peason.cryptocalcs.datatypes;
 
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
-public class CryptoCurrency  {
+public class CryptoTrade {
+
+        static final DateTimeFormatter dtfm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         String currency;
         double coinsAmount;
         double averageRate;
-        Date tradeDate;
+        LocalDate tradeDate;
 
         public String getCurrency() {
                 return currency;
@@ -34,14 +37,22 @@ public class CryptoCurrency  {
         }
 
 
-        public Date getTradeDate() {
-                return tradeDate;
+        public String getTradeDate() {
+                return tradeDate.toString();
         }
 
-
-        public void setTradeDate(Date tradeDate) {
+        public void setTradeDate(LocalDate tradeDate) {
                 this.tradeDate = tradeDate;
         }
 
+        public void setTradeDate(String tradeDate) {
+                this.tradeDate = LocalDate.parse(tradeDate,dtfm);
+
+        }
+
+        @Override
+        public String toString() {
+                return new String("Date:" + getTradeDate() +",Curr:" + getCurrency() + ",Coins:" + getCoinsAmount() + ",Exrate:" + getAverageRate());
+        }
 
 }

@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.logging.*;
 
 public class FileConverter {
-    private static final org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(FileConverter.class);
     static Logger logger = Logger.getLogger(FileConverter.class.getName());
     static String separator = FileSystems.getDefault().getSeparator();
     static boolean batchMode = false;
@@ -425,7 +424,7 @@ public class FileConverter {
     }
     public static void main(String[] args) {
         FileConverter fileConverter = new FileConverter();
-        if (args.length==0  || fileConverter.processArgs(args)) {
+        if (args.length==0 || fileConverter.processArgs(args)) {
             //config passed
             fileConverter.configureLogging();
             if (batchMode) {

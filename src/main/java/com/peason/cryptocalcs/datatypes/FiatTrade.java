@@ -1,8 +1,10 @@
 package com.peason.cryptocalcs.datatypes;
 
-import java.util.Date;
+import com.peason.cryptocalcs.CryptoTradeManager;
 
-public class Trade {
+import java.time.LocalDate;
+
+public class FiatTrade {
 /* example
 
 We bought 10 SOL for a cost of 1600 USDT, which was calculated
@@ -15,12 +17,13 @@ Therefore we need to add an entry to:
 For now lets ignore fees.
  */
      String currencyPair;
-     Date tradeDate;
+     LocalDate tradeDate;
      double sourceCurrencyCoinAmount;
      double destinationCurrencyCoinAmount;
      double exchangeRate;
      double realisedPL;
-     String tradeType; // "B" or "S"
+     String tradeType; // "D","W","B" or "S"
+     CryptoTradeManager.StatusCode status;      //1=need cost of purchase, 2=missing exrate, used average, 99= error, more coins sold/withdrawn than available
 
     public String getCurrencyPair() {
         return currencyPair;
@@ -30,7 +33,7 @@ For now lets ignore fees.
         this.currencyPair = currencyPair;
     }
 
-    public Date getTradeDate() {
+    public LocalDate getTradeDate() {
         return tradeDate;
     }
 
@@ -42,7 +45,7 @@ For now lets ignore fees.
         this.destinationCurrencyCoinAmount = destinationCurrencyCoinAmount;
     }
 
-    public void setTradeDate(Date tradeDate) {
+    public void setTradeDate(LocalDate tradeDate) {
         this.tradeDate = tradeDate;
     }
 
@@ -78,4 +81,11 @@ For now lets ignore fees.
         this.tradeType = tradeType;
     }
 
+    public CryptoTradeManager.StatusCode getStatus() {
+        return status;
+    }
+
+    public void setStatus(CryptoTradeManager.StatusCode status) {
+        this.status = status;
+    }
 }
