@@ -175,7 +175,7 @@ public class FileConverter {
 
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setVisible(true);
-        setJTableColumnsWidth(table, 1160, 5, 15, 15, 5, 15, 10, 10, 10, 10);
+        TableUtils.setJTableColumnsWidth(table, 1160, new int[] {5, 15, 15, 5, 15, 10, 10, 10, 10});
 
         // Add the table to a scroll pane
         JScrollPane scrollPane = new JScrollPane(table);
@@ -290,19 +290,7 @@ public class FileConverter {
         table.changeSelection(tableModel.getRowCount() - 1, 1, false, false);
     }
 
-    public static void setJTableColumnsWidth(JTable table, int tablePreferredWidth,
-                                             double... percentages) {
-        double total = 0;
-        for (int i = 0; i < table.getColumnModel().getColumnCount(); i++) {
-            total += percentages[i];
-        }
 
-        for (int i = 0; i < table.getColumnModel().getColumnCount(); i++) {
-            TableColumn column = table.getColumnModel().getColumn(i);
-            column.setPreferredWidth((int)
-                    (tablePreferredWidth * (percentages[i] / total)));
-        }
-    }
 
     private boolean processArgs(String[] args) {
         String arg;
