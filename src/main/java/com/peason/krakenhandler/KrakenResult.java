@@ -10,8 +10,8 @@ public class KrakenResult {
     @JsonProperty("error")
     private String[] errors;
 
-    @JsonProperty("count")
-    private int count;
+//    @JsonProperty("count")
+//    private int count;
 
 
     public String[] getErrors() {
@@ -23,11 +23,11 @@ public class KrakenResult {
     }
 
 
-    public int getCount() {
-        return count;
-    }
-
-    public void setCount(int count) {
-        this.count = count;
-    }
+//    public int getCount() {
+//        return count;
+//    }
+//
+//    public void setCount(int count) {
+//        this.count = count;
+//    }
 }

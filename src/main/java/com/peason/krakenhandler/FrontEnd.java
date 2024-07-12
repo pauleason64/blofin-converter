@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 public class FrontEnd extends JFrame {
     KrakenAPI krakenAPI=null;
+    KrakenData krakenData =null;
     private JTextArea statusTextArea;
     private static FrontEnd instance;
     public boolean isRunning=false;
@@ -52,6 +52,7 @@ public class FrontEnd extends JFrame {
 
         // Create an instance of BackgroundThread
         krakenAPI = new KrakenAPI(this);
+        krakenData= KrakenData.getInstance();
 
         // Create components
         statusTextArea = new JTextArea();
@@ -62,7 +63,7 @@ public class FrontEnd extends JFrame {
         bottomPanel = configureBottomPanel();
         ledgerPanel=configureLedgerTablePanel();
         tradesPanel= configureTradeTablePanel();
-        centrePanel.add(ledgerPanel);
+        centrePanel.add(tradesPanel);
         this.add(topPanel,BorderLayout.NORTH);
         this.add(centrePanel,BorderLayout.CENTER);
         this.add(bottomPanel,BorderLayout.SOUTH);
@@ -73,69 +74,54 @@ public class FrontEnd extends JFrame {
         isRunning=true;
     }
 
-    public void displayMessage(long totalCount,long offset, long count, Object result) {
+    public void refreshLedgerTable() {
+        //update table with new records
         SwingUtilities.invokeLater(() -> {
-            if (result instanceof LedgerHistoryResult ) {
-                //updateCenterPanel();
-                showLedgers((LedgerHistoryResult) result);
+            textField.setText(String.format("Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ",
+                    krakenData.availableLedgerCount, krakenData.fetchedLedgerOffset,
+                    krakenData.availableTradeCount, krakenData.fetchedTradeOffset
+            ));
+            ledgerTable.setRowCount(0);
+            for (Component comp : centrePanel.getComponents()) {
+                if( comp instanceof JPanel) centrePanel.remove(comp);
+            }
+                for (LedgerHistoryResult.Ledger record : krakenData.ledgerList) {
+                    ledgerTable.addRow(new Object[]{
+                            record.getRefid(), record.getType(), record.getSubtype(),
+                            record.getAsset(), record.getTime(), record.getAmount(),
+                            record.getFee(), record.getBalance()});
 
-            }
-            if (result instanceof TradesHistoryResult ) {
-                showTrades((TradesHistoryResult) result);
-            }
-         //   writeToLogFile(message);
-        });
+                }
+            ledgerPanel.setVisible(true);
+            centrePanel.add(ledgerPanel);
+            centrePanel.updateUI();
+            });
     }
 
-    private void showLedgers(LedgerHistoryResult result) {
+    public void refreshTradesTable() {
         //update table with new records
-        for (Component comp : centrePanel.getComponents()) {
-            if( comp instanceof JPanel) centrePanel.remove(comp);
-        }
-        if (result !=null ) {
-            int recordSize = result.getResults().ledgers.size();
-            int rowsize = ledgerTable.getRowCount();
-            //int tablerow=0;
-            LedgerHistoryResult.Ledger record;
-            for (Map.Entry<String, LedgerHistoryResult.Ledger> entry : result.getResults().ledgers.entrySet()) {
-                //tablerow=rowno+rowsize;
-                record = entry.getValue();
-                ledgerTable.addRow(new Object[]{
-                        record.getRefid(), record.getType(), record.getSubtype(),
-                        record.getAsset(), record.getTime(), record.getAmount(),
-                        record.getFee(), record.getBalance()});
-
+        SwingUtilities.invokeLater(() -> {
+            textField.setText(String.format("Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ",
+                    krakenData.availableLedgerCount, krakenData.fetchedLedgerOffset,
+                    krakenData.availableTradeCount, krakenData.fetchedTradeOffset
+            ));
+            for (Component comp : centrePanel.getComponents()) {
+                if (comp instanceof JPanel) centrePanel.remove(comp);
             }
-        }
-        ledgerPanel.setVisible(true);
-        centrePanel.add(ledgerPanel);
-        centrePanel.updateUI();
-    }
-
-    private void showTrades(TradesHistoryResult result) {
-        //update table with new records
-        for (Component comp : centrePanel.getComponents()) {
-            if (comp instanceof JPanel) centrePanel.remove(comp);
-        }
-        if (result !=null) {
-            int recordSize = result.getResults().trades.size();
-            int rowsize = ledgerTable.getRowCount();
-            //int tablerow=0;
-            TradesHistoryResult.Trade record;
-            for (Map.Entry<String, TradesHistoryResult.Trade> entry : result.getResults().trades.entrySet()) {
-                //tablerow=rowno+rowsize;
-                record = entry.getValue();
-
+            //clear out table without deleting headers
+            tradesTable.setRowCount(0);
+            for (TradesHistoryResult.Trade record : krakenData.tradeList) {
                 tradesTable.addRow(new Object[]{
                         record.getType(), record.getPair(), record.getOrdertype(),
                         record.getTime(), record.getVol(), record.getPrice(),
                         record.getFee(), record.getCost(), record.getMargin(),
                         record.getOrdertxid(), record.getTradeId(), "+"});
 
-            }
-        }
-        centrePanel.add(tradesPanel);
-        centrePanel.updateUI();
+                }
+            tradesPanel.setVisible(true);
+            centrePanel.add(tradesPanel);
+            centrePanel.updateUI();
+        });
     }
 
     private void writeToLogFile(String message) {
@@ -160,7 +146,7 @@ public class FrontEnd extends JFrame {
 
     public JPanel configureCenterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(150, 50, 50));
+        panel.setBackground(new Color(50, 50, 50));
         return panel;
     }
 
@@ -174,25 +160,25 @@ public class FrontEnd extends JFrame {
         ledgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                krakenAPI.getLedgersAndTrades("Ledgers",0,0,"all",0);
+                krakenAPI.getLedgersAndTrades("Ledgers",0,0,"all",krakenData.fetchedLedgerOffset);
             }
         });
         tradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                krakenAPI.getLedgersAndTrades("TradesHistory",0,0,"all",0);
+                krakenAPI.getLedgersAndTrades("TradesHistory",0,0,"all",krakenData.fetchedTradeOffset);
             }
         });
         showLedgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showLedgers(null);
+                refreshLedgerTable();
             }
         });
         showTradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showTrades(null);
+                refreshTradesTable();
             }
         });
         panel.add(ledgerButton,FlowLayout.LEFT);
@@ -211,7 +197,6 @@ public class FrontEnd extends JFrame {
                 return column != 0;
             }
         };
-        //scrollPane.setSize(new Dimension(1184,frame.getHeight()-80));
         JTable ledgerView = new JTable(ledgerTable);
         ledgerView.setFillsViewportHeight(true);
         JScrollPane scrollPane = new JScrollPane(ledgerView);

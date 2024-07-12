@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 public class LedgerHistoryResult extends KrakenResult {
 
@@ -17,41 +16,44 @@ public class LedgerHistoryResult extends KrakenResult {
     @JsonProperty("result")
     Result result;
 
-    public Result getResults() {
+    public Result getResult() {
         return result;
     }
 
-    public void setResults(Result result) {
-        this.result = result;
-    }
+//    public void setResults(Result result) {
+//        this.result = result;
+//    }
 
     @Override
     public String toString(){
         return
                 "Result{" +
                         ",error = '" + getErrors() + '\'' +
-                        ",count = '" + getCount() +
-                        ",results = '" + getResults().ledgers + '\'' +
+//                        ",count = '" + getCount() +
+                        ",ledgers = '" + getResult().ledgers + '\'' +
                         "}";
     }
+
     static class Result {
-
-
-        @JsonProperty("error")
-        private List<Object> error;
 
         @JsonProperty("count")
         private int count;
 
         @JsonProperty("ledger")
-        public HashMap<String, Ledger> ledgers;
+        public  HashMap<String, Ledger> ledgers =new HashMap<>();
 
-        public List<Object> getError() {
-            return error;
+        public void setCount(int count) {
+            this.count = count;
+        }
+
+        public int getCount() {
+            return count;
         }
     }
 
     static public class Ledger{
+
+        private String ledgerKey;
 
         @JsonProperty("refid")
         private String refid;
@@ -157,9 +159,18 @@ public class LedgerHistoryResult extends KrakenResult {
             this.time=new Date(time.longValue()*1000L);
         }
 
+        public String getLedgerKey() {
+            return ledgerKey;
+        }
+
+        public void setLedgerKey(String ledgerKey) {
+            this.ledgerKey = ledgerKey;
+        }
+
         @Override
         public String toString(){
             return
+                    "key = '" + getLedgerKey() + '\'' +
                     "type = '" + getType() + '\'' +
                     ",subtype = '" + getSubtype() + '\'' +
                     ",refid = '" + getRefid() + '\'' +

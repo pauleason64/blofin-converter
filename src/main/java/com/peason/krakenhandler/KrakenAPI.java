@@ -23,7 +23,7 @@ import java.security.MessageDigest;
 
 public class KrakenAPI extends Thread {
 
-    private KrakenData data;
+    private KrakenData krakenData;
     private volatile boolean running=false;
     static KrakenParser krakenParser= new KrakenParser();
     public static FrontEnd fend;
@@ -32,7 +32,7 @@ public class KrakenAPI extends Thread {
 
     public KrakenAPI(FrontEnd fe){
         fend =fe;
-        data = KrakenData.getInstance();
+        krakenData = KrakenData.getInstance();
     }
 
     public void run() {
@@ -46,7 +46,7 @@ public class KrakenAPI extends Thread {
         }
     }
 
-    public void getLedgersAndTrades(String endPoint,long start, long end, String type, int ofs) {
+    public void getLedgersAndTrades(String endPoint,long start, long end, String type, long ofs) {
         StringBuilder bld=new StringBuilder();
         bld.append(start > 0 ? "start="+String.valueOf(start)+"&" : "");
         bld.append(end > 0 ? "end="+String.valueOf(end)+"&" : "");
@@ -55,11 +55,11 @@ public class KrakenAPI extends Thread {
         if (endPoint.contains("Trades")) bld.append("ledgers=true");
         String inputParameters= bld.toString();
         if (inputParameters.endsWith("&")) inputParameters=inputParameters.substring(0,inputParameters.length()-1);
-        try {
-            inputParameters= URLEncoder.encode(inputParameters, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            inputParameters= URLEncoder.encode(inputParameters, StandardCharsets.UTF_8.toString());
+//        } catch (UnsupportedEncodingException e) {
+//            throw new RuntimeException(e);
+//        }
 
          QueryPrivateEndpoint(endPoint,inputParameters,
                 "ueeiVqWa6U/ce20f8c6tIeQQH6LUmRRPV49wQDn6+CQ9MtBxdOMEtjjw",
@@ -109,13 +109,17 @@ public class KrakenAPI extends Thread {
             switch (endPointName) {
                 case "Ledgers":
                     LedgerHistoryResult lresult= krakenParser.parseLedgers(responseJson);
-                    data.addLedgers(lresult.getResults().ledgers);
-                    fend.displayMessage(lresult.getCount(),0, lresult.getResults().ledgers.size(), lresult);
+                    krakenData.addLedgers(lresult.getResult().ledgers);
+                    krakenData.availableLedgerCount= lresult.getResult().getCount();
+                    krakenData.fetchedLedgerOffset+= lresult.getResult().ledgers.size();
+                    fend.refreshLedgerTable();
                     break;
                 case "TradesHistory":
                     TradesHistoryResult tresult= krakenParser.parseTradeHistory(responseJson);
-                    data.addTrades(tresult.getResults().trades);
-                    fend.displayMessage(tresult.getCount(),0, tresult.getResults().trades.size(), tresult);
+                    krakenData.addTrades(tresult.getResult().trades);
+                    krakenData.availableTradeCount= tresult.getResult().getCount();
+                    krakenData.fetchedTradeOffset+= tresult.getResult().trades.size();
+                    fend.refreshTradesTable();
             }
 
         } catch (Exception e) {

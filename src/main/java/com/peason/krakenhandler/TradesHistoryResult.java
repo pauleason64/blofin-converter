@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 public class TradesHistoryResult  extends KrakenResult {
 
@@ -20,11 +19,11 @@ public class TradesHistoryResult  extends KrakenResult {
 	@JsonProperty("result")
 	Result result;
 
-	public Result getResults() {
+	public Result getResult() {
 		return result;
 	}
 
-	public void setResults(Result result) {
+	public void setResult(Result result) {
 		this.result = result;
 	}
 
@@ -33,15 +32,15 @@ public class TradesHistoryResult  extends KrakenResult {
 		return
 				"Result{" +
 						",error = '" + getErrors() + '\'' +
-						",count = '" + getCount() +
-						",results = '" + getResults() + '\'' +
+//						",count = '" + getCount() +
+						",results = '" + getResult() + '\'' +
 						"}";
 	}
 
 	static class Result {
-		@JsonProperty("error")
-		@JsonIgnore
-		private List<Object> error;
+//		@JsonProperty("error")
+//		@JsonIgnore
+//		private List<Object> error;
 
 		@JsonProperty("count")
 		private int count;
@@ -49,19 +48,23 @@ public class TradesHistoryResult  extends KrakenResult {
 		@JsonProperty("trades")
 		public HashMap<String, Trade> trades;
 
-		public List<Object> getError() {
-			return error;
-		}
+//		public List<Object> getError() {
+//			return error;
+//		}
 
 		public int getCount() {
 			return count;
+		}
+
+		public void setCount(int count) {
+			this.count = count;
 		}
 
 		@Override
 		public String toString() {
 			return
 					"Result{" +
-							",error = '" + error + '\'' +
+//							",error = '" + error + '\'' +
 							",count = '" + count +
 							",trades = '" + trades + '\'' +
 							"}";
@@ -69,6 +72,8 @@ public class TradesHistoryResult  extends KrakenResult {
 	}
 
 	static class Trade {
+
+		private String tradeKey;
 
 		@JsonProperty("leverage")
 		private String leverage;
@@ -117,6 +122,8 @@ public class TradesHistoryResult  extends KrakenResult {
 
 		@JsonProperty("ledgers")
 		private ArrayList<String> ledgerIds;
+
+		private String resultKey;
 
 		@JsonProperty("posstatus")
 		@JsonIgnore
@@ -190,10 +197,27 @@ public class TradesHistoryResult  extends KrakenResult {
 			return ledgerIds;
 		}
 
+		public void setResultKey(String resultKey) {
+			this.resultKey = resultKey;
+		}
+
+		public String getResultKey() {
+			return resultKey;
+		}
+
+		public String getTradeKey() {
+			return tradeKey;
+		}
+
+		public void setTradeKey(String tradeKey) {
+			this.tradeKey = tradeKey;
+		}
+
 		@Override
 		public String toString() {
 			return
 					"Ledger{" +
+							",key = '" + getResultKey() + '\'' +
 							",type = '" + getType() + '\'' +
 							",pair = '" + getPair() + '\'' +
 							",time = '" + getTime() + '\'' +

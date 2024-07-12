@@ -1,33 +1,42 @@
 package com.peason.krakenhandler;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class KrakenData {
+
+    public static <T> Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor)
+    {
+        Map<Object, Boolean> map = new ConcurrentHashMap<>();
+        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
 
     static KrakenData instance;
     //These counts are used during the recursive calls to the apis. They dont necessarily relate to the total available
     //e.g. On first call we will fetch all of them, say 2000 records and keep calling 50 at a time
     //on subsequent update calls we will only fetch the new ones based on dates.
     //ultimately the records will be saved to the DB so we wont use this long term
-    static long availableLedgerCount=0 ;
-    static long availableTradeCount=0;
-    static long fetchedLedgerOffset=0;
-    static long fetchedTradeOffset=0;
+    public static long availableLedgerCount=0 ;
+    public static long availableTradeCount=0;
+    public static long fetchedLedgerOffset=0;
+    public static long fetchedTradeOffset=0;
 
     //store all trades and ledgers by time field to avoid sorting requirements on frontend
     static Comparator tradeDateComparator = new Comparator<TradesHistoryResult.Trade>() {
-
-            public int compare(TradesHistoryResult.Trade t1, TradesHistoryResult.Trade t2) {
+        @Override
+        public int compare(TradesHistoryResult.Trade t1, TradesHistoryResult.Trade t2) {
                 return (t1.getTime().compareTo(t2.getTime()));
             }
         };
 
     static      Comparator ledgerDateComparator = new Comparator<LedgerHistoryResult.Ledger>() {
-
-            public int compare(LedgerHistoryResult.Ledger l1, LedgerHistoryResult.Ledger l2) {
-                return (l1.getTime().compareTo(l2.getTime()));
-            }
-        };
+        @Override
+        public int compare(LedgerHistoryResult.Ledger t1, LedgerHistoryResult.Ledger t2) {
+            return (t1.getTime().compareTo(t2.getTime()));
+        }
+    };
 
   private KrakenData() {}
 
@@ -36,20 +45,40 @@ public class KrakenData {
     return instance;
   }
 
-  private TreeMap<String, TradesHistoryResult.Trade> allTrades =
-                new TreeMap<String, TradesHistoryResult.Trade>((tradeDateComparator));
+  List<String> getUniqueLedgerAssets() {
+      List<String> assets = ledgerList.stream().filter(distinctByKey(l->l.getAsset()))
+              .map(l->l.getAsset()).toList();
+    return assets;
+  }
+
+List<String> getUniqueTradePairs() {
+    List<String>  pairs = tradeList.stream().filter(distinctByKey(l->l.getPair()))
+            .map(l->l.getPair()).toList();
+    return pairs;
+}
+
+ArrayList<TradesHistoryResult.Trade> tradeList = new ArrayList<>();
+ArrayList<LedgerHistoryResult.Ledger> ledgerList = new ArrayList<>();
+List<String> ledgerCurrencies= getUniqueLedgerAssets();
+List<String> tradeCurrencies = getUniqueTradePairs();
+
+public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger> ledgers) {
+    for (Map.Entry<String, LedgerHistoryResult.Ledger> ledger : ledgers.entrySet()) {
+        //changing the key to the date
+        ledger.getValue().setLedgerKey(ledger.getKey());
+        ledgerList.add(ledger.getValue());
+    }
+    ledgerList.sort((a, b)->b.getTime().compareTo(a.getTime()));
+
+}
 
 
-  private TreeMap<String, LedgerHistoryResult.Ledger> allLedgers =
-                new TreeMap<String, LedgerHistoryResult.Ledger>((ledgerDateComparator));
-
-    public  TreeMap<String, TradesHistoryResult.Trade> getAllTrades () {
-            return allTrades;     }
-
-    public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger > ledgers){
-            allLedgers.putAll(ledgers);     }
-
-    public void addTrades(HashMap<String,TradesHistoryResult.Trade> trades) {
-        allTrades.putAll(trades);}
-
+public void addTrades(HashMap <String, TradesHistoryResult.Trade> trades ) {
+        for (Map.Entry<String,TradesHistoryResult.Trade> trade : trades.entrySet()) {
+            trade.getValue().setTradeKey(trade.getKey());
+            tradeList.add(trade.getValue());
+        }
+    //sort newest first
+    tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
+    }
 }
