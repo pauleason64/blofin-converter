@@ -1,4 +1,4 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,10 +37,7 @@ public class TradesHistoryResult  extends KrakenResult {
 						"}";
 	}
 
-	static class Result {
-//		@JsonProperty("error")
-//		@JsonIgnore
-//		private List<Object> error;
+	public static class Result {
 
 		@JsonProperty("count")
 		private int count;
@@ -48,16 +45,16 @@ public class TradesHistoryResult  extends KrakenResult {
 		@JsonProperty("trades")
 		public HashMap<String, Trade> trades;
 
-//		public List<Object> getError() {
-//			return error;
-//		}
-
 		public int getCount() {
 			return count;
 		}
 
 		public void setCount(int count) {
 			this.count = count;
+		}
+
+		public HashMap<String, Trade> getTrades() {
+			return trades;
 		}
 
 		@Override
@@ -71,7 +68,7 @@ public class TradesHistoryResult  extends KrakenResult {
 		}
 	}
 
-	static class Trade {
+	public  static class Trade {
 
 		private String tradeKey;
 

@@ -1,12 +1,15 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.api;
+
+import com.peason.krakenhandler.FrontEnd;
+import com.peason.krakenhandler.data.KrakenParser;
+import com.peason.krakenhandler.data.KrakenData;
+import com.peason.krakenhandler.data.TradesHistoryResult;
+import com.peason.krakenhandler.data.LedgerHistoryResult;
 
 import java.io.DataOutputStream;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import javax.crypto.Mac;
@@ -19,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import java.security.MessageDigest;
+import java.util.List;
 
 
 public class KrakenAPI extends Thread {
@@ -46,7 +50,7 @@ public class KrakenAPI extends Thread {
         }
     }
 
-    public void getLedgersAndTrades(String endPoint,long start, long end, String type, long ofs) {
+    public String getLedgersAndTrades(String endPoint,long start, long end, String type, long ofs) {
         StringBuilder bld=new StringBuilder();
         bld.append(start > 0 ? "start="+String.valueOf(start)+"&" : "");
         bld.append(end > 0 ? "end="+String.valueOf(end)+"&" : "");
@@ -61,18 +65,19 @@ public class KrakenAPI extends Thread {
 //            throw new RuntimeException(e);
 //        }
 
-         QueryPrivateEndpoint(endPoint,inputParameters,
+       return   QueryPrivateEndpoint(endPoint,inputParameters,
                 "ueeiVqWa6U/ce20f8c6tIeQQH6LUmRRPV49wQDn6+CQ9MtBxdOMEtjjw",
                 "LkgL89b57xtg3gg5T4zLkt3ztFgneZ0L14lIUUX5O+c59KzwhP9BiuC+yQnfi0xE3xo5KGR1pX2RO4NJqxKfSw==");
         //System.out.println(responseJson);
     }
 
-        public void QueryPrivateEndpoint(String endPointName,
+        public String QueryPrivateEndpoint(String endPointName,
                                            String inputParameters,
                                            String apiPublicKey,
                                            String apiPrivateKey) {
 
         String responseJson = "";
+        String errMsg;
 
         String baseDomain = "https://api.kraken.com";
         String privatePath = "/0/private/";
@@ -105,27 +110,38 @@ public class KrakenAPI extends Thread {
                 responseJson += line;
             }
 
+            if (responseJson.substring(0,30).contains("Rate limit")) {
+                errMsg = "Api rate limit reached - try again later";
+                } else { errMsg="";
+            }
 
             switch (endPointName) {
                 case "Ledgers":
-                    LedgerHistoryResult lresult= krakenParser.parseLedgers(responseJson);
-                    krakenData.addLedgers(lresult.getResult().ledgers);
-                    krakenData.availableLedgerCount= lresult.getResult().getCount();
-                    krakenData.fetchedLedgerOffset+= lresult.getResult().ledgers.size();
-                    fend.refreshLedgerTable();
-                    break;
-                case "TradesHistory":
-                    TradesHistoryResult tresult= krakenParser.parseTradeHistory(responseJson);
-                    krakenData.addTrades(tresult.getResult().trades);
-                    krakenData.availableTradeCount= tresult.getResult().getCount();
-                    krakenData.fetchedTradeOffset+= tresult.getResult().trades.size();
-                    fend.refreshTradesTable();
+                    if (errMsg.equals("")) {
+                        LedgerHistoryResult lresult = krakenParser.parseLedgers(responseJson);
+                        krakenData.addLedgers(lresult.getResult().ledgers);
+                        krakenData.availableLedgerCount = lresult.getResult().getCount();
+                        krakenData.fetchedLedgerOffset += lresult.getResult().ledgers.size();
+                    }
+                    fend.refreshLedgerTable(errMsg);
+                    return errMsg;
+              //      List<String>assets= krakenData.getUniqueLedgerAssets();
+                default:
+                    if (errMsg.equals("")) {
+                        TradesHistoryResult tresult = krakenParser.parseTradeHistory(responseJson);
+                        krakenData.addTrades(tresult.getResult().getTrades());
+                        krakenData.availableTradeCount = tresult.getResult().getCount();
+                        krakenData.fetchedTradeOffset += tresult.getResult().trades.size();
+                    }
+                    fend.refreshTradesTable(errMsg);
+                    return errMsg;
+              //      List<String> pairs=krakenData.getUniqueTradePairs();
             }
 
         } catch (Exception e) {
             System.out.println(e);
+            return e.getMessage();
         }
-       // return responseJson;
     }
 
 

@@ -1,9 +1,10 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.data;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 
 public class KrakenData {
 
@@ -23,44 +24,45 @@ public class KrakenData {
     public static long fetchedLedgerOffset=0;
     public static long fetchedTradeOffset=0;
 
-    //store all trades and ledgers by time field to avoid sorting requirements on frontend
-    static Comparator tradeDateComparator = new Comparator<TradesHistoryResult.Trade>() {
-        @Override
-        public int compare(TradesHistoryResult.Trade t1, TradesHistoryResult.Trade t2) {
-                return (t1.getTime().compareTo(t2.getTime()));
-            }
-        };
-
-    static      Comparator ledgerDateComparator = new Comparator<LedgerHistoryResult.Ledger>() {
-        @Override
-        public int compare(LedgerHistoryResult.Ledger t1, LedgerHistoryResult.Ledger t2) {
-            return (t1.getTime().compareTo(t2.getTime()));
-        }
-    };
+//    //store all trades and ledgers by time field to avoid sorting requirements on frontend
+//    static Comparator tradeDateComparator = new Comparator<TradesHistoryResult.Trade>() {
+//        @Override
+//        public int compare(TradesHistoryResult.Trade t1, TradesHistoryResult.Trade t2) {
+//                return (t1.getTime().compareTo(t2.getTime()));
+//            }
+//        };
+//
+//    static      Comparator ledgerDateComparator = new Comparator<LedgerHistoryResult.Ledger>() {
+//        @Override
+//        public int compare(LedgerHistoryResult.Ledger t1, LedgerHistoryResult.Ledger t2) {
+//            return (t1.getTime().compareTo(t2.getTime()));
+//        }
+//    };
 
   private KrakenData() {}
 
-  public static synchronized KrakenData getInstance() {
+    public List<TradesHistoryResult.Trade> tradeList = new ArrayList<>();
+    public List<LedgerHistoryResult.Ledger> ledgerList = new ArrayList<>();
+
+    public static synchronized KrakenData getInstance() {
     if (null==instance) instance=new KrakenData();
     return instance;
   }
 
-  List<String> getUniqueLedgerAssets() {
-      List<String> assets = ledgerList.stream().filter(distinctByKey(l->l.getAsset()))
+  public List<String> getUniqueLedgerAssets() {
+    if (ledgerList==null) return new ArrayList<String>();
+    List<String> assets = ledgerList.stream().filter(distinctByKey(l->l.getAsset()))
               .map(l->l.getAsset()).toList();
     return assets;
   }
 
-List<String> getUniqueTradePairs() {
+ public List<String> getUniqueTradePairs() {
+    if (tradeList==null) return new ArrayList<String>();
     List<String>  pairs = tradeList.stream().filter(distinctByKey(l->l.getPair()))
             .map(l->l.getPair()).toList();
     return pairs;
 }
 
-ArrayList<TradesHistoryResult.Trade> tradeList = new ArrayList<>();
-ArrayList<LedgerHistoryResult.Ledger> ledgerList = new ArrayList<>();
-List<String> ledgerCurrencies= getUniqueLedgerAssets();
-List<String> tradeCurrencies = getUniqueTradePairs();
 
 public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger> ledgers) {
     for (Map.Entry<String, LedgerHistoryResult.Ledger> ledger : ledgers.entrySet()) {
@@ -68,8 +70,8 @@ public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger> ledgers) {
         ledger.getValue().setLedgerKey(ledger.getKey());
         ledgerList.add(ledger.getValue());
     }
-    ledgerList.sort((a, b)->b.getTime().compareTo(a.getTime()));
-
+    //sort newest first
+    ledgerList.sort((a, b) -> b.getTime().compareTo(a.getTime()));
 }
 
 

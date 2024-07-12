@@ -1,4 +1,4 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

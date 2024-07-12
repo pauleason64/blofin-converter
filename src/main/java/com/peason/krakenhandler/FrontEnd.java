@@ -1,6 +1,9 @@
 package com.peason.krakenhandler;
 
 import com.peason.blofin2koinly.TableUtils;
+import com.peason.krakenhandler.api.KrakenAPI;
+import com.peason.krakenhandler.data.*;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -11,6 +14,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import static com.peason.krakenhandler.data.KrakenData.*;
 
 public class FrontEnd extends JFrame {
     KrakenAPI krakenAPI=null;
@@ -74,12 +79,19 @@ public class FrontEnd extends JFrame {
         isRunning=true;
     }
 
-    public void refreshLedgerTable() {
+    public void refreshLedgerTable(String errMsg) {
         //update table with new records
         SwingUtilities.invokeLater(() -> {
+            if (!errMsg.equals("")) {
+                textField.setText(String.format("** Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ** ERROR:%s",
+                        availableLedgerCount, fetchedLedgerOffset,
+                        krakenData.availableTradeCount, fetchedTradeOffset, errMsg
+                ));
+                return;
+            }
             textField.setText(String.format("Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ",
-                    krakenData.availableLedgerCount, krakenData.fetchedLedgerOffset,
-                    krakenData.availableTradeCount, krakenData.fetchedTradeOffset
+                    availableLedgerCount, fetchedLedgerOffset,
+                    krakenData.availableTradeCount, fetchedTradeOffset
             ));
             ledgerTable.setRowCount(0);
             for (Component comp : centrePanel.getComponents()) {
@@ -98,12 +110,19 @@ public class FrontEnd extends JFrame {
             });
     }
 
-    public void refreshTradesTable() {
+    public void refreshTradesTable(String errMsg) {
         //update table with new records
         SwingUtilities.invokeLater(() -> {
+            if (!errMsg.equals("")) {
+                textField.setText(String.format("** Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ** ERROR:%s",
+                        availableLedgerCount, fetchedLedgerOffset,
+                        krakenData.availableTradeCount, fetchedTradeOffset, errMsg
+                ));
+                return;
+            }
             textField.setText(String.format("Ledgers: Available %d, Fetched %d, Trades: Available %d, Fetched %d ",
-                    krakenData.availableLedgerCount, krakenData.fetchedLedgerOffset,
-                    krakenData.availableTradeCount, krakenData.fetchedTradeOffset
+                    availableLedgerCount, fetchedLedgerOffset,
+                    krakenData.availableTradeCount, fetchedTradeOffset
             ));
             for (Component comp : centrePanel.getComponents()) {
                 if (comp instanceof JPanel) centrePanel.remove(comp);
@@ -153,37 +172,71 @@ public class FrontEnd extends JFrame {
     public JPanel configureBottomPanel() {
         JPanel panel = new JPanel(new FlowLayout());
         JButton showLedgerButton = new JButton("Show Ledgers");
+        JButton allledgerButton = new JButton("All Ledgers");
+        JButton ledgerButton = new JButton("Update Ledgers");
         JButton showTradesButton = new JButton("Show Trades");
-        JButton ledgerButton = new JButton("Fetch Ledgers");
-        JButton tradesButton = new JButton("Fetch Trades");
+        JButton alltradesButton = new JButton("All Trades");
+        JButton tradesButton = new JButton("Update Trades");
         // Set action listener for the button to start, pause or stop the background process
         ledgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                krakenAPI.getLedgersAndTrades("Ledgers",0,0,"all",krakenData.fetchedLedgerOffset);
+             String message= krakenAPI.getLedgersAndTrades("Ledgers",0,0,"all",fetchedLedgerOffset);
+             if (!message.equals("")) textField.setText(message);
+            }
+        });
+        allledgerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textField.setText("fetching all ledgers...");
+                while (availableLedgerCount==0 || availableLedgerCount > fetchedLedgerOffset) {
+                    String message=krakenAPI.getLedgersAndTrades("Ledgers", 0, 0, "all", fetchedLedgerOffset);
+                    if (!message.equals("")) {
+                        textField.setText(message);
+                        return;  }//end calls
+                }
+                //once all fetched, reset counters
+                availableLedgerCount=0; fetchedLedgerOffset=0;
             }
         });
         tradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                krakenAPI.getLedgersAndTrades("TradesHistory",0,0,"all",krakenData.fetchedTradeOffset);
+                krakenAPI.getLedgersAndTrades("TradesHistory",0,0,"all", fetchedTradeOffset);
             }
         });
+
+        alltradesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textField.setText("fetching all trades...");
+                while (availableTradeCount == 0 || availableTradeCount > fetchedTradeOffset) {
+                    String message=krakenAPI.getLedgersAndTrades("TradesHistory", 0, 0, "all", fetchedTradeOffset);
+                    if (!message.equals("")) {
+                            textField.setText(message);
+                            return; } //end calls
+                }
+                //once all fetched, reset counters
+                availableTradeCount = 0; fetchedTradeOffset=0;
+            }});
+
         showLedgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                refreshLedgerTable();
+                refreshLedgerTable("");
             }
         });
         showTradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                refreshTradesTable();
+                refreshTradesTable("");
             }
         });
         panel.add(ledgerButton,FlowLayout.LEFT);
-        panel.add(tradesButton,FlowLayout.LEFT);
-        panel.add(showLedgerButton,FlowLayout.RIGHT);
+        panel.add(showLedgerButton,FlowLayout.LEFT);
+        panel.add(allledgerButton,FlowLayout.CENTER);
+        panel.add(tradesButton,FlowLayout.CENTER);
+        panel.add(alltradesButton,FlowLayout.RIGHT);
         panel.add(showTradesButton,FlowLayout.RIGHT);
         return panel;
     }

@@ -1,4 +1,4 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,7 +34,7 @@ public class LedgerHistoryResult extends KrakenResult {
                         "}";
     }
 
-    static class Result {
+   public static class Result {
 
         @JsonProperty("count")
         private int count;

@@ -1,17 +1,11 @@
-package com.peason.krakenhandler;
+package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.HashMap;
-import java.util.List;
 
 public class KrakenResult {
 
     @JsonProperty("error")
     private String[] errors;
-
-//    @JsonProperty("count")
-//    private int count;
 
 
     public String[] getErrors() {
@@ -23,11 +17,5 @@ public class KrakenResult {
     }
 
 
-//    public int getCount() {
-//        return count;
-//    }
-//
-//    public void setCount(int count) {
-//        this.count = count;
-//    }
+
 }
