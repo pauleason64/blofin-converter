@@ -1,15 +1,24 @@
 package com.peason.krakenhandler.api;
 
+import com.peason.databasetables.APIFEEDS;
+import com.peason.services.ServersAndTablesRepository;
 import com.peason.krakenhandler.FrontEnd;
 import com.peason.krakenhandler.data.KrakenParser;
 import com.peason.krakenhandler.data.KrakenData;
 import com.peason.krakenhandler.data.TradesHistoryResult;
 import com.peason.krakenhandler.data.LedgerHistoryResult;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Service;
+
 import java.io.DataOutputStream;
 
 import java.net.URL;
 
+import java.sql.SQLException;
 import java.util.Base64;
 
 import javax.crypto.Mac;
@@ -24,19 +33,36 @@ import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.util.List;
 
-
+@Service
+@ComponentScan(basePackages = {"com.peason.*"})
+@DependsOn({"krakenData","krakenParser"})
 public class KrakenAPI extends Thread {
 
-    private KrakenData krakenData;
+
     private volatile boolean running=false;
-    static KrakenParser krakenParser= new KrakenParser();
-    public static FrontEnd fend;
     public static int LedgerOffset = 0;
     public static int TradesOffset = 0;
 
-    public KrakenAPI(FrontEnd fe){
-        fend =fe;
-        krakenData = KrakenData.getInstance();
+    @Autowired
+    @Qualifier("serversAndTablesRepository")
+    private ServersAndTablesRepository serversAndTablesRepository;
+
+    @Autowired
+    @Qualifier("krakenData")
+    private KrakenData kd;
+
+    @Autowired
+    @Qualifier("krakenParser")
+    private  KrakenParser krakenParser;
+
+    //removed autowiring due to circlular dep
+
+    private  FrontEnd fend=null;
+
+    public KrakenAPI(){}
+
+    public void init(FrontEnd fe) {
+        this.fend=fe;
     }
 
     public void run() {
@@ -59,16 +85,14 @@ public class KrakenAPI extends Thread {
         if (endPoint.contains("Trades")) bld.append("ledgers=true");
         String inputParameters= bld.toString();
         if (inputParameters.endsWith("&")) inputParameters=inputParameters.substring(0,inputParameters.length()-1);
-//        try {
-//            inputParameters= URLEncoder.encode(inputParameters, StandardCharsets.UTF_8.toString());
-//        } catch (UnsupportedEncodingException e) {
-//            throw new RuntimeException(e);
-//        }
-
-       return   QueryPrivateEndpoint(endPoint,inputParameters,
-                "ueeiVqWa6U/ce20f8c6tIeQQH6LUmRRPV49wQDn6+CQ9MtBxdOMEtjjw",
-                "LkgL89b57xtg3gg5T4zLkt3ztFgneZ0L14lIUUX5O+c59KzwhP9BiuC+yQnfi0xE3xo5KGR1pX2RO4NJqxKfSw==");
-        //System.out.println(responseJson);
+        APIFEEDS apifeed;
+        try {
+            apifeed = serversAndTablesRepository.getAPIDataForSource("Kraken");
+            return   QueryPrivateEndpoint(endPoint,inputParameters,
+                    apifeed.getApiKey(), apifeed.getApiPk());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
         public String QueryPrivateEndpoint(String endPointName,
@@ -119,9 +143,9 @@ public class KrakenAPI extends Thread {
                 case "Ledgers":
                     if (errMsg.equals("")) {
                         LedgerHistoryResult lresult = krakenParser.parseLedgers(responseJson);
-                        krakenData.addLedgers(lresult.getResult().ledgers);
-                        krakenData.availableLedgerCount = lresult.getResult().getCount();
-                        krakenData.fetchedLedgerOffset += lresult.getResult().ledgers.size();
+                        kd.addLedgers(lresult.getResult().ledgers);
+                        kd.setAvailableLedgerCount(lresult.getResult().getCount());
+                        kd.setFetchedLedgerOffset(kd.getFetchedLedgerOffset() + lresult.getResult().ledgers.size());
                     }
                     fend.refreshLedgerTable(errMsg);
                     return errMsg;
@@ -129,9 +153,9 @@ public class KrakenAPI extends Thread {
                 default:
                     if (errMsg.equals("")) {
                         TradesHistoryResult tresult = krakenParser.parseTradeHistory(responseJson);
-                        krakenData.addTrades(tresult.getResult().getTrades());
-                        krakenData.availableTradeCount = tresult.getResult().getCount();
-                        krakenData.fetchedTradeOffset += tresult.getResult().trades.size();
+                        kd.addTrades(tresult.getResult().getTrades());
+                        kd.setAvailableTradeCount(tresult.getResult().getCount());
+                        kd.setFetchedTradeOffset(kd.getFetchedTradeOffset() + tresult.getResult().trades.size());
                     }
                     fend.refreshTradesTable(errMsg);
                     return errMsg;

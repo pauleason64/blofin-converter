@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+#enabled normally true but if set to false can speed up testing if debugging.
+ct:
+  friendlyName: CryptoTrades-E1
+  driver-class-name: com.mysql.jdbc.Driver
+  jdbc-url: jdbc:mysql://localhost:3306/crypto_trades
+  username: peason
+  password: tomcat
+  schema:   crypto_trades
+  enabled:  true
+  allowedtables:  krakenTrades,krakenLedgers,blofinTrades,cryptorates,fiatrates
+
+
+

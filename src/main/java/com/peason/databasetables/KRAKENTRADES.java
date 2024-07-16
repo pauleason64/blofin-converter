@@ -1,10 +1,10 @@
-package com.peason.database;
+package com.peason.databasetables;
 
 import jakarta.persistence.*;
 import jakarta.persistence.Id;
 
 @Entity
-public class KrakenTrades {
+public class KRAKENTRADES {
     @Id
     private Long id;
     private String field1;

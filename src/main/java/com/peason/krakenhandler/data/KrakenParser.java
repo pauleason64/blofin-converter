@@ -1,7 +1,11 @@
 package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+@Service
+@Component
 public class KrakenParser {
 
         public KrakenParser() {}
