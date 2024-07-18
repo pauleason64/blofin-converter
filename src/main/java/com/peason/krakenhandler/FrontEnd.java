@@ -1,6 +1,9 @@
 package com.peason.krakenhandler;
 
 import com.peason.blofin2koinly.TableUtils;
+import com.peason.databasetables.Ledger;
+import com.peason.databasetables.LedgerHistoryResult;
+import com.peason.databasetables.Trade;
 import com.peason.databasetables.USERPROFILE;
 import com.peason.krakenhandler.api.KrakenAPI;
 import com.peason.krakenhandler.data.*;
@@ -112,10 +115,10 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
             for (Component comp : centrePanel.getComponents()) {
                 if (comp instanceof JPanel) centrePanel.remove(comp);
             }
-            for (Ledger row : krakenData.ledgerList) {
+            for (Ledger row : krakenData.getLedgerList()) {
                 ledgerTable.addRow(new Object[]{
-                        row.getRefid(), row.getType(), row.getSubtype(),
-                        row.getAsset(), row.getTime(), row.getAmount(),
+                        row.getRefid(), row.getTradetype(), row.getSubtype(),
+                        row.getAsset(), row.getTradedt(), row.getCost(),
                         row.getFee(), row.getBalance()});
 
             }
@@ -144,12 +147,12 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
             }
             //clear out table without deleting headers
             tradesTable.setRowCount(0);
-            for (Trade row : krakenData.tradeList) {
+            for (Trade row : krakenData.getTradeList()) {
                 tradesTable.addRow(new Object[]{
                         row.getType(), row.getPair(), row.getOrdertype(),
-                        row.getTime(), row.getVol(), row.getPrice(),
+                        row.getTradedt(), row.getVol(), row.getPrice(),
                         row.getFee(), row.getCost(), row.getMargin(),
-                        row.getOrdertxid(), row.getTradeId(), row.getLedgerIdsAsString()});
+                        row.getOrdertxid(), row.getTradeId(), row.getLedgerids()});
 
             }
             tradesPanel.setVisible(true);

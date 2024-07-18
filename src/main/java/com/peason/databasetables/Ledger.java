@@ -1,17 +1,15 @@
-package com.peason.krakenhandler.data;
+package com.peason.databasetables;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.cglib.core.Local;
 
+import java.beans.BeanProperty;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.sql.Timestamp;
 import java.util.Date;
 
 public class Ledger {
 
-        static final DateTimeFormatter dtfm = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         private long id;
         private String ledgerKey;
         private long sourceid;
@@ -20,11 +18,10 @@ public class Ledger {
         @JsonProperty("refid")
         private String refid;
 
-        @JsonProperty("time")
-        private LocalDateTime time;
+        private Date tradedt;
 
         @JsonProperty("type")
-        private String type;
+        private String tradetype;
 
         @JsonProperty("subtype")
         private String subtype;
@@ -36,7 +33,7 @@ public class Ledger {
         private String asset;
 
         @JsonProperty("amount")
-        private BigDecimal amount;
+        private BigDecimal cost;
 
         @JsonProperty("fee")
         private BigDecimal fee;
@@ -56,20 +53,15 @@ public class Ledger {
             this.refid = refid;
         }
 
-        public LocalDateTime getTime() {
-            return time;
+        public Date getTradedt() {
+            return tradedt;
+        }
+        public String getTradetype() {
+            return tradetype;
         }
 
-//        public LocalDateTime getTimeAsLocalDate() {
-//            return LocalDateTime.parse (time,dtfm);
-//        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
+        public void setTradetype(String type) {
+            this.tradetype = type;
         }
 
         public String getSubtype() {
@@ -96,12 +88,12 @@ public class Ledger {
             this.asset = asset;
         }
 
-        public BigDecimal getAmount() {
-            return this.amount;
+        public BigDecimal getCost() {
+            return this.cost;
         }
 
-        public void setAmount(String amount) {
-            this.amount = new BigDecimal(amount);
+        public void setCost(String amount) {
+            this.cost = new BigDecimal(amount);
         }
 
         public BigDecimal getFee() {
@@ -120,11 +112,17 @@ public class Ledger {
             this.balance = new BigDecimal(balance);
         }
 
-        public void setTime(String time) {
-            this.time=LocalDateTime.parse(time);
+        @JsonProperty("time")
+        public void setTime(Double time) {
+            this.tradedt=new Date(time.longValue()*1000L);
         }
 
-        public String getLedgerKey() {
+        public void setTradedt(Timestamp tradedt) {
+        this.tradedt=new Date(tradedt.getTime());
+        }
+
+
+    public String getLedgerKey() {
             return ledgerKey;
         }
 
@@ -140,8 +138,8 @@ public class Ledger {
             this.id = id;
         }
 
-    public long getSourceid() {
-        return sourceid;
+        public long getSourceid() {
+            return sourceid;
     }
 
     public void setSourceid(long sourceid) {
@@ -156,22 +154,26 @@ public class Ledger {
         this.profileid = profileid;
     }
 
-    public Object[] getFieldsForInsertQuery(){
-            return new Object[]{getProfileid(),getSourceid(),getRefid(),getTime(),getAsset(),
-            getType(),getSubtype(),getAmount(),getFee(),getBalance()};
+    public void setCost(BigDecimal cost) {
+        this.cost = cost;
+    }
 
+
+    public Object[] getFieldsForInsertQuery(){
+            return new Object[]{getProfileid(),getSourceid(),getRefid(),getLedgerKey(),getTradedt(),getAsset(),
+            getTradetype(),getSubtype(),getCost(),getFee(),getBalance()};
         }
 
         @Override
         public String toString(){
             return  "id = '"+ getId() + '\'' +
                     "key = '" + getLedgerKey() + '\'' +
-                    "type = '" + getType() + '\'' +
+                    "type = '" + getTradetype() + '\'' +
                     ",subtype = '" + getSubtype() + '\'' +
                     ",refid = '" + getRefid() + '\'' +
                     ",asset = '" + getAsset() + '\'' +
-                    ",time = '" + getTime() +
-                    ",amount = '" + getAmount() + '\'' +
+                    ",time = '" + getTradedt() +
+                    ",amount = '" + getCost() + '\'' +
                     ",fee = '" + getFee() + '\'' +
                     ",bal = '" + getBalance() + '\'' +
                     "}";

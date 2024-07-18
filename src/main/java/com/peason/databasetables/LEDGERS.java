@@ -3,6 +3,7 @@ package com.peason.databasetables;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 @Entity

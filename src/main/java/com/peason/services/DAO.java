@@ -2,7 +2,7 @@ package com.peason.services;
 
 import com.peason.databasetables.SOURCES;
 import com.peason.databasetables.USERPROFILE;
-import com.peason.krakenhandler.data.Ledger;
+import com.peason.databasetables.Ledger;
 import com.peason.model.*;
 import com.peason.utils.DateUtil;
 import org.json.JSONArray;

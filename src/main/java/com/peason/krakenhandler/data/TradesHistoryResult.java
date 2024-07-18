@@ -1,11 +1,9 @@
 package com.peason.krakenhandler.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.peason.databasetables.Trade;
 
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
 public class TradesHistoryResult  extends KrakenResult {

@@ -7,7 +7,7 @@ import com.peason.krakenhandler.FrontEnd;
 import com.peason.krakenhandler.data.KrakenParser;
 import com.peason.persistance.KrakenData;
 import com.peason.krakenhandler.data.TradesHistoryResult;
-import com.peason.krakenhandler.data.LedgerHistoryResult;
+import com.peason.databasetables.LedgerHistoryResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -148,8 +148,8 @@ public class KrakenAPI extends Thread {
                         LedgerHistoryResult lresult = krakenParser.parseLedgers(responseJson);
                         kd.addLedgers(lresult.getResult().ledgers);
                         kd.setAvailableLedgerCount(lresult.getResult().getCount());
+                        krakenDAO.insertLedgers(lresult.getResult().getLedgers(),"ledgers");
                         kd.setFetchedLedgerOffset(kd.getFetchedLedgerOffset() + lresult.getResult().ledgers.size());
-                        krakenDAO.insertLedgers(lresult.getResult().ledgers,"ledgers");
 
                     }
                     fend.refreshLedgerTable(errMsg);

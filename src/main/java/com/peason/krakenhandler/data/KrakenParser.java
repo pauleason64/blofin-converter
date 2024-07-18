@@ -1,6 +1,7 @@
 package com.peason.krakenhandler.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.peason.databasetables.LedgerHistoryResult;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 

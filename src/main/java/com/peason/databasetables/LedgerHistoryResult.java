@@ -1,9 +1,8 @@
-package com.peason.krakenhandler.data;
+package com.peason.databasetables;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.math.BigDecimal;
-import java.util.Date;
+import com.peason.krakenhandler.data.KrakenResult;
+
 import java.util.HashMap;
 
 public class LedgerHistoryResult extends KrakenResult {
@@ -49,6 +48,10 @@ public class LedgerHistoryResult extends KrakenResult {
         public int getCount() {
             return count;
         }
-    }
+
+       public HashMap<String, Ledger> getLedgers() {
+           return ledgers;
+       }
+   }
 
 }

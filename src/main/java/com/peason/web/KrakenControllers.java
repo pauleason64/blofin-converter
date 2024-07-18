@@ -1,7 +1,8 @@
 package com.peason.web;
 
 import com.peason.databasetables.LEDGERS;
-import com.peason.databasetables.TRADES;
+import com.peason.databasetables.Ledger;
+import com.peason.databasetables.Trade;
 import com.peason.persistance.ServersAndTablesRepository;
 import com.peason.interfaces.KrakenLedgerRepository;
 import com.peason.interfaces.KrakenTradesRepository;
@@ -18,18 +19,18 @@ public class KrakenControllers {
     ServersAndTablesRepository serversAndTablesRepository;
 
     //@Autowired
-    private KrakenLedgerRepository krakenLedgerRepository;
+     private KrakenLedgerRepository krakenLedgerRepository;
 
     //@Autowired
     private KrakenTradesRepository krakenTradesRepository;
 
     @GetMapping("/ledgers")
-    public Page<LEDGERS> getRecordsA(@RequestParam int page, @RequestParam int size) {
+    public Page<Ledger> getRecordsA(@RequestParam int page, @RequestParam int size) {
         return krakenLedgerRepository.findAll(PageRequest.of(page, size));
     }
 
     @GetMapping("/trades")
-    public Page<TRADES> getRecordsB(@RequestParam int page, @RequestParam int size) {
+    public Page<Trade> getRecordsB(@RequestParam int page, @RequestParam int size) {
         return krakenTradesRepository.findAll(PageRequest.of(page, size));
     }
 }

@@ -1,7 +1,7 @@
 package com.peason.persistance;
 
-import com.peason.krakenhandler.data.Ledger;
-import com.peason.krakenhandler.data.Trade;
+import com.peason.databasetables.Ledger;
+import com.peason.databasetables.Trade;
 import com.peason.services.KrakenDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -60,7 +60,7 @@ public void addLedgers(HashMap < String, Ledger> ledgers) {
         ledgerList.add(ledger.getValue());
     }
     //sort newest first
-    ledgerList.sort((a, b) -> b.getTime().compareTo(a.getTime()));
+    ledgerList.sort((a, b) -> b.getTradedt().compareTo(a.getTradedt()));
 }
 
 
@@ -70,13 +70,13 @@ public void addTrades(HashMap <String, Trade> trades ) {
             tradeList.add(trade.getValue());
         }
     //sort newest first
-    tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
+    tradeList.sort((a, b)->b.getTradedt().compareTo(a.getTradedt()));
     }
 
     public void addTrades(ArrayList <Trade> trades ) {
         tradeList.addAll(trades);
         //sort newest first
-        tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
+        tradeList.sort((a, b)->b.getTradedt().compareTo(a.getTradedt()));
     }
 
     public void refreshLedgersFromDB() {
@@ -100,5 +100,14 @@ public void addTrades(HashMap <String, Trade> trades ) {
     public long getFetchedTradeOffset() {
         return fetchedTradeOffset;
     }
-    public void setFetchedTradeOffset(long fetchedTradeOffset) {this.fetchedTradeOffset = fetchedTradeOffset;}
+    public void setFetchedTradeOffset(long fetchedTradeOffset) {
+        this.fetchedTradeOffset = fetchedTradeOffset;}
+
+    public List<Trade> getTradeList() {
+        return tradeList;
+    }
+
+    public List<Ledger> getLedgerList() {
+        return ledgerList;
+    }
 }

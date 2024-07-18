@@ -1,9 +1,10 @@
 package com.peason.services;
 
-import com.peason.krakenhandler.data.Ledger;
-import com.peason.krakenhandler.data.Trade;
+import com.peason.databasetables.Ledger;
+import com.peason.databasetables.Trade;
 import com.peason.model.DBTable;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.stereotype.Component;
 
@@ -24,10 +25,15 @@ public class KrakenDAO extends DAO{
             ledger.getValue().setProfileid(1);
             ledger.getValue().setSourceid(1);
             sqlArgs.add(ledger.getValue().getFieldsForInsertQuery());
-            break;
+            //break;
         }
-        jdbcTemplate.batchUpdate(sql,sqlArgs);
-    }
+        try {
+            jdbcTemplate.batchUpdate(sql, sqlArgs);
+        } catch (DataAccessException de) {
+            System.out.println(de.getStackTrace());
+        }
+
+   }
 
     public void insertTrades(HashMap<String, Trade> trades, String tableName) {
         String sql =dbServer.getTable(tableName).getInsertStatement();
