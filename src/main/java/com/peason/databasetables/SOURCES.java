@@ -2,8 +2,10 @@ package com.peason.databasetables;
 
 import java.util.Date;
 
-public class APIFEEDS {
+public class SOURCES {
     //fetch from DB
+    int profileID;
+    int sourceTypeID;
     String sourceName;
     String apiKey;
     String apiPk;
@@ -14,6 +16,14 @@ public class APIFEEDS {
     long ledgerCount;
     boolean autorefresh;
     Date nextRefreshDate;
+
+    public int getProfileID() {return profileID;}
+
+    public void setProfileID(int profileID) {this.profileID = profileID;}
+
+    public int getSourceTypeID() {return sourceTypeID;}
+
+    public void setSourceTypeID(int sourceTypeID) {this.sourceTypeID = sourceTypeID;}
 
     public String getSourceName() {
         return sourceName;

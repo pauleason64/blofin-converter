@@ -6,7 +6,7 @@ import jakarta.persistence.Id;
 import java.util.Date;
 
 @Entity
-public class KRAKENLEDGERS {
+public class LEDGERS {
     @Id
     private Long id;
     private String refid;

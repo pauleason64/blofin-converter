@@ -6,7 +6,7 @@ import jakarta.persistence.Id;
 import java.util.Date;
 
 @Entity
-public class KRAKENTRADES {
+public class TRADES {
     @Id
     private Long id;
     private String tradetype;

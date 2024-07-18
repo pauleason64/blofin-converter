@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS blofintrades (
     toVolume double,
 	fee double
 );
-CREATE TABLE IF NOT EXISTS apiFeeds (
+CREATE TABLE IF NOT EXISTS sources (
 	sourceName varchar(20),
     apiKey varchar(100),
     apiPK  varchar (200),

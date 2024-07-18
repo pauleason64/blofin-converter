@@ -10,6 +10,9 @@ ct:
   password: my_crypto
   schema:   crypto_trans
   enabled:  true
-  allowedtables:  krakentrades,krakenledgers,blofintrades,cryptorates,fiatrates,apifeeds
+  allowedtables:  trades,ledgers,cryptorates,fiatrates,sources,profiles,sources
+
+profileUsername : peason
+
 
 

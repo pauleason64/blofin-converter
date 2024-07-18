@@ -1,10 +1,12 @@
-package com.peason.services;
+package com.peason.persistance;
 
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.peason.databasetables.APIFEEDS;
+import com.peason.databasetables.SOURCES;
+import com.peason.databasetables.USERPROFILE;
 import com.peason.model.*;
+import com.peason.services.DAO;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.BeansException;
@@ -31,26 +33,19 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
 
     public ServersAndTablesRepository() {}
 
-//    @Autowired
-    private AppConfig appConfig;//= springClasses.getAppConfig();
-
-    //@Autowired
     DAO dao ;
-
     DBServer dbServer;
     Map<String, DBServer> serverMap ;
-    List<APIFEEDS> apiFeeds =new ArrayList<>();
-
+    List<SOURCES> sources =new ArrayList<>();
+    List<USERPROFILE> users= new ArrayList<>();
 
     @PostConstruct
     public void init() {
         dao = context.getBean(DAO.class);
-        appConfig= context.getBean(AppConfig.class);
         dbServer=context.getBean(DBServer.class);
 
     }
     public static final String emptyColumns = "[]";
-
 
     public String getTableNames() {
         List<DBTable> tables = dbServer.getAvailableTables();
@@ -58,7 +53,6 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
     }
 
     public ArrayList<TableColumn> getTableColumnArray( String tableName) {
-
         ArrayList<TableColumn> columns = null;
         DBTable table = dbServer.getTable(tableName);
         if (table != null) {
@@ -68,7 +62,6 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
     }
 
     public String getTableColumns( String tableName) {
-
         ArrayList<TableColumn> columns = getTableColumnArray( tableName);
         return columns == null ? emptyColumns : gsonHideNonExposed.toJson(columns);
     }
@@ -79,8 +72,7 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
         dao.loadTableData();
     }
 
-
-    public TableRows getTableData( String tableName) throws SQLException {
+   public TableRows getTableData( String tableName) throws SQLException {
       //  JSONArray jsonArray=dao.getTableData(serverName,tableName);
         TableRows tr=new TableRows();
 //        for (int i = 0; i < jsonArray.length(); i++) {
@@ -91,24 +83,47 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
     }
 
     public String insertRow(JSONObject json, String tableName) throws SQLException {
-
-
         return dao.insertTableData(json,  tableName);
-
     }
 
     public String deleteRow(JSONObject json, String serverName, String tableName) throws SQLException {
-
-
         return dao.deleteTableData(json, serverName, tableName);
-
     }
 
     public String updateRow(JSONArray json, String tableName) throws Exception {
-
-
         return dao.updateTableData(json,  tableName);
+    }
 
+    public SOURCES getAPIDataForSource (String sourceName) throws SQLException {
+        if (sources.size() == 0) {
+            sources = dao.getSourcesData();
+        }
+        for (int i = 0; i < sources.size(); i++) {
+            SOURCES source = (SOURCES) sources.get(i);
+            if (source.getSourceName().equalsIgnoreCase(sourceName)) return source;
+        }
+        return null;
+    }
+
+   public USERPROFILE getProfileData(String userName,String password, String email) {
+       if (users.size() == 0) {
+           users = dao.getProfileData();
+       }
+       //expand to full check later
+       for (int i = 0; i < users.size(); i++) {
+           if (users.get(i).getUserName().equalsIgnoreCase(userName)) {
+               //check pwd and email later
+               return users.get(i);
+           }
+       }
+       USERPROFILE errorProfile = new USERPROFILE();
+       errorProfile.setErrMsg("unknown username or password");
+       return errorProfile;
+   }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        context=applicationContext;
     }
 
     public static void main(String[] args) {
@@ -116,27 +131,4 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
         server.setup();
     }
 
-    public APIFEEDS getAPIDataForSource (String sourceName) throws SQLException {
-        if (apiFeeds.size() == 0) {
-            apiFeeds = dao.getAPIData();
-        }
-        for (int i = 0; i < apiFeeds.size(); i++) {
-            APIFEEDS feed = (APIFEEDS) apiFeeds.get(i);
-            if (feed.getSourceName().equalsIgnoreCase(sourceName)) return feed;
-        }
-        return null;
-    }
-
-    public List<APIFEEDS> getAPIData () throws SQLException {
-        //look to make this a mapper class later
-        if (apiFeeds.size() == 0) {
-            apiFeeds = dao.getAPIData();
-        }
-        return apiFeeds;
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        context=applicationContext;
-    }
 }

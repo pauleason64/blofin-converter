@@ -81,7 +81,7 @@ public class DBTable {
             sb.append(") values (");
             for (int i=0; i< columnList.size(); i++) {
                 if (!columnList.get(i).isIdentifier)  {
-                    sb.append(":").append(columnList.get(i).getKey());
+                    sb.append("?");
                     if (i<columnList.size()-1) sb.append(","); }
             }
             sb.append(")");

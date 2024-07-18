@@ -1,9 +1,12 @@
 package com.peason.krakenhandler;
 
 import com.peason.blofin2koinly.TableUtils;
+import com.peason.databasetables.USERPROFILE;
 import com.peason.krakenhandler.api.KrakenAPI;
 import com.peason.krakenhandler.data.*;
-import jakarta.annotation.PostConstruct;
+import com.peason.model.AppConfig;
+import com.peason.persistance.KrakenData;
+import com.peason.persistance.ServersAndTablesRepository;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +28,8 @@ import java.awt.event.ActionListener;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import static com.peason.krakenhandler.data.KrakenData.*;
 
 @SpringBootApplication   (exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
 @ComponentScan(basePackages = {"com.peason.*"})
@@ -49,9 +49,12 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
     private ApplicationContext context;
 
     KrakenAPI krakenAPI ;
+    ServersAndTablesRepository serversAndTablesRepository;
+    AppConfig appConfig;
+    USERPROFILE userprofile;
 
     @Autowired
-     KrakenData krakenData ;
+    KrakenData krakenData ;
 
     private static DefaultTableModel ledgerTable;
     private DefaultTableModel tradesTable;
@@ -60,15 +63,15 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         updateUI();
     }
 
+    public void processLogin() {
+        //dummy for now
+        //dao
+    }
     public void updateUI() {
         setTitle("Status Application");
         setLayout(new BorderLayout());
         setSize(new Dimension(1200, 700));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Create an instance of BackgroundThread
-//krakenAPI = new KrakenAPI(this);
-  //     krakenData = KrakenData.getInstance();
 
         // Create components
         statusTextArea = new JTextArea();
@@ -109,11 +112,11 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
             for (Component comp : centrePanel.getComponents()) {
                 if (comp instanceof JPanel) centrePanel.remove(comp);
             }
-            for (LedgerHistoryResult.Ledger record : krakenData.ledgerList) {
+            for (Ledger row : krakenData.ledgerList) {
                 ledgerTable.addRow(new Object[]{
-                        record.getRefid(), record.getType(), record.getSubtype(),
-                        record.getAsset(), record.getTime(), record.getAmount(),
-                        record.getFee(), record.getBalance()});
+                        row.getRefid(), row.getType(), row.getSubtype(),
+                        row.getAsset(), row.getTime(), row.getAmount(),
+                        row.getFee(), row.getBalance()});
 
             }
             ledgerPanel.setVisible(true);
@@ -141,12 +144,12 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
             }
             //clear out table without deleting headers
             tradesTable.setRowCount(0);
-            for (TradesHistoryResult.Trade record : krakenData.tradeList) {
+            for (Trade row : krakenData.tradeList) {
                 tradesTable.addRow(new Object[]{
-                        record.getType(), record.getPair(), record.getOrdertype(),
-                        record.getTime(), record.getVol(), record.getPrice(),
-                        record.getFee(), record.getCost(), record.getMargin(),
-                        record.getOrdertxid(), record.getTradeId(), "+"});
+                        row.getType(), row.getPair(), row.getOrdertype(),
+                        row.getTime(), row.getVol(), row.getPrice(),
+                        row.getFee(), row.getCost(), row.getMargin(),
+                        row.getOrdertxid(), row.getTradeId(), row.getLedgerIdsAsString()});
 
             }
             tradesPanel.setVisible(true);
@@ -216,7 +219,8 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         tradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                krakenAPI.getLedgersAndTrades("TradesHistory", 0, 0, "all", krakenData.getFetchedTradeOffset());
+                String message =krakenAPI.getLedgersAndTrades("TradesHistory", 0, 0, "all", krakenData.getFetchedTradeOffset());
+                if (!message.equals("")) textField.setText(message);
             }
         });
 
@@ -240,12 +244,15 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         showLedgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                //todo: implement paging or date ranges later
+                krakenData.refreshLedgersFromDB();
                 refreshLedgerTable("");
             }
         });
         showTradesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                krakenData.refreshTradesFromDB();
                 refreshTradesTable("");
             }
         });
@@ -338,6 +345,10 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
     @Override
     public void afterPropertiesSet() throws Exception {
         krakenAPI=context.getBean(KrakenAPI.class);
+        serversAndTablesRepository = context.getBean(ServersAndTablesRepository.class);
+        appConfig=context.getBean(AppConfig.class);
+        //todo:will move later - need to add login screen
+        userprofile=serversAndTablesRepository.getProfileData(appConfig.getProfileUserName(),null,null);
         krakenAPI.init(this);
     }
 

@@ -1,8 +1,8 @@
 package com.peason.web;
 
-import com.peason.databasetables.KRAKENLEDGERS;
-import com.peason.databasetables.KRAKENTRADES;
-import com.peason.services.ServersAndTablesRepository;
+import com.peason.databasetables.LEDGERS;
+import com.peason.databasetables.TRADES;
+import com.peason.persistance.ServersAndTablesRepository;
 import com.peason.interfaces.KrakenLedgerRepository;
 import com.peason.interfaces.KrakenTradesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +24,12 @@ public class KrakenControllers {
     private KrakenTradesRepository krakenTradesRepository;
 
     @GetMapping("/ledgers")
-    public Page<KRAKENLEDGERS> getRecordsA(@RequestParam int page, @RequestParam int size) {
+    public Page<LEDGERS> getRecordsA(@RequestParam int page, @RequestParam int size) {
         return krakenLedgerRepository.findAll(PageRequest.of(page, size));
     }
 
     @GetMapping("/trades")
-    public Page<KRAKENTRADES> getRecordsB(@RequestParam int page, @RequestParam int size) {
+    public Page<TRADES> getRecordsB(@RequestParam int page, @RequestParam int size) {
         return krakenTradesRepository.findAll(PageRequest.of(page, size));
     }
 }

@@ -3,6 +3,7 @@ package com.peason.model;
 import com.peason.services.DAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,10 +36,13 @@ public class AppConfig {
     private final String SCHEMA_NAME = "schema";
     private final String ENABLED = "enabled";
 
+    @Value("${profileUsername}")
+    String profileUserName ;
+
     @Bean
     @ConfigurationProperties(prefix="ct")
     @Qualifier(DAO.DBNAME)
-    public DBServer CRYPTO_DBSERVER() {
+    public DBServer CRYPTO_dbServer() {
 
         String prefix="ct.";
         DriverManagerDataSource driverManagerDataSource = new DriverManagerDataSource();
@@ -47,14 +51,17 @@ public class AppConfig {
         driverManagerDataSource.setPassword(environment.getProperty(prefix.concat(PASSWORD)));
         driverManagerDataSource.setDriverClassName(environment.getProperty(prefix.concat(DRIVER)));
         driverManagerDataSource.setSchema(environment.getProperty(prefix.concat(SCHEMA_NAME)));
-        DBServer DBServer = new DBServer(driverManagerDataSource);
-        DBServer.setFriendlyName(environment.getProperty(prefix.concat(FRIENDLY_NAME)));
-        DBServer.setShortName(DAO.DBNAME);
-        DBServer.setSchema(environment.getProperty(prefix.concat(SCHEMA_NAME)));
-        DBServer.setAvailableTables(new ArrayList<String>(Arrays.asList(environment.getProperty(prefix.concat(ALLOWED_TABLES)).split(","))));
-        DBServer.setJdbcTemplate(new JdbcTemplate(driverManagerDataSource));
-        DBServer.setEnabled(Boolean.valueOf(environment.getProperty(prefix.concat(ENABLED))));
-        return DBServer;
+        DBServer dbServer = new DBServer(driverManagerDataSource);
+        dbServer.setFriendlyName(environment.getProperty(prefix.concat(FRIENDLY_NAME)));
+        dbServer.setShortName(DAO.DBNAME);
+        dbServer.setSchema(environment.getProperty(prefix.concat(SCHEMA_NAME)));
+        dbServer.setAvailableTables(new ArrayList<String>(Arrays.asList(environment.getProperty(prefix.concat(ALLOWED_TABLES)).split(","))));
+        dbServer.setJdbcTemplate(new JdbcTemplate(driverManagerDataSource));
+        dbServer.setEnabled(Boolean.valueOf(environment.getProperty(prefix.concat(ENABLED))));
+        return dbServer;
     }
 
+    public String getProfileUserName() {
+        return profileUserName;
+    }
 }

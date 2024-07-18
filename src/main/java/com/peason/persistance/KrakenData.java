@@ -1,16 +1,21 @@
-package com.peason.services;
+package com.peason.persistance;
 
 import com.peason.krakenhandler.data.Ledger;
 import com.peason.krakenhandler.data.Trade;
-import org.springframework.stereotype.Service;
+import com.peason.services.KrakenDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-@Service
+@Repository
 public class KrakenData {
+
+    @Autowired
+    KrakenDAO krakenDAO;
 
     public static <T> Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor)
     {
@@ -33,7 +38,7 @@ public class KrakenData {
     public List<Trade> tradeList = new ArrayList<>();
     public List<Ledger> ledgerList = new ArrayList<>();
 
-  public List<String> getUniqueLedgerAssets() {
+    public List<String> getUniqueLedgerAssets() {
     if (ledgerList==null) return new ArrayList<String>();
     List<String> assets = ledgerList.stream().filter(distinctByKey(l->l.getAsset()))
               .map(l->l.getAsset()).toList();
@@ -74,38 +79,26 @@ public void addTrades(HashMap <String, Trade> trades ) {
         tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
     }
 
-    public void RefreshLedgersFromDB() {
-      ArrayList<Map,Object> ledgersAsObject =
+    public void refreshLedgersFromDB() {
+       ledgerList=krakenDAO.refreshLedgersFromDB();
+    }
+    public void refreshTradesFromDB() {
+        tradeList=krakenDAO.refreshTradesFromDB();
     }
     public long getAvailableLedgerCount() {
         return availableLedgerCount;
     }
-
-    public void setAvailableLedgerCount(long availableLedgerCount) {
-        this.availableLedgerCount = availableLedgerCount;
-    }
-
+    public void setAvailableLedgerCount(long availableLedgerCount) {this.availableLedgerCount = availableLedgerCount;}
     public long getAvailableTradeCount() {
         return availableTradeCount;
     }
-
-    public void setAvailableTradeCount(long availableTradeCount) {
-        this.availableTradeCount = availableTradeCount;
-    }
-
+  public void setAvailableTradeCount(long availableTradeCount) { this.availableTradeCount = availableTradeCount;}
     public long getFetchedLedgerOffset() {
         return fetchedLedgerOffset;
     }
-
-    public void setFetchedLedgerOffset(long fetchedLedgerOffset) {
-        this.fetchedLedgerOffset = fetchedLedgerOffset;
-    }
-
+    public void setFetchedLedgerOffset(long fetchedLedgerOffset) {this.fetchedLedgerOffset = fetchedLedgerOffset;}
     public long getFetchedTradeOffset() {
         return fetchedTradeOffset;
     }
-
-    public void setFetchedTradeOffset(long fetchedTradeOffset) {
-        this.fetchedTradeOffset = fetchedTradeOffset;
-    }
+    public void setFetchedTradeOffset(long fetchedTradeOffset) {this.fetchedTradeOffset = fetchedTradeOffset;}
 }

@@ -1,10 +1,11 @@
 package com.peason.krakenhandler.api;
 
-import com.peason.databasetables.APIFEEDS;
-import com.peason.services.ServersAndTablesRepository;
+import com.peason.databasetables.SOURCES;
+import com.peason.services.KrakenDAO;
+import com.peason.persistance.ServersAndTablesRepository;
 import com.peason.krakenhandler.FrontEnd;
 import com.peason.krakenhandler.data.KrakenParser;
-import com.peason.krakenhandler.data.KrakenData;
+import com.peason.persistance.KrakenData;
 import com.peason.krakenhandler.data.TradesHistoryResult;
 import com.peason.krakenhandler.data.LedgerHistoryResult;
 
@@ -31,7 +32,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import java.security.MessageDigest;
-import java.util.List;
 
 @Service
 @ComponentScan(basePackages = {"com.peason.*"})
@@ -50,6 +50,9 @@ public class KrakenAPI extends Thread {
     @Autowired
     @Qualifier("krakenData")
     private KrakenData kd;
+
+    @Autowired
+    KrakenDAO krakenDAO;
 
     @Autowired
     @Qualifier("krakenParser")
@@ -85,11 +88,11 @@ public class KrakenAPI extends Thread {
         if (endPoint.contains("Trades")) bld.append("ledgers=true");
         String inputParameters= bld.toString();
         if (inputParameters.endsWith("&")) inputParameters=inputParameters.substring(0,inputParameters.length()-1);
-        APIFEEDS apifeed;
+        SOURCES sources;
         try {
-            apifeed = serversAndTablesRepository.getAPIDataForSource("Kraken");
+            sources = serversAndTablesRepository.getAPIDataForSource("Kraken");
             return   QueryPrivateEndpoint(endPoint,inputParameters,
-                    apifeed.getApiKey(), apifeed.getApiPk());
+                    sources.getApiKey(), sources.getApiPk());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -146,20 +149,22 @@ public class KrakenAPI extends Thread {
                         kd.addLedgers(lresult.getResult().ledgers);
                         kd.setAvailableLedgerCount(lresult.getResult().getCount());
                         kd.setFetchedLedgerOffset(kd.getFetchedLedgerOffset() + lresult.getResult().ledgers.size());
+                        krakenDAO.insertLedgers(lresult.getResult().ledgers,"ledgers");
+
                     }
                     fend.refreshLedgerTable(errMsg);
                     return errMsg;
-              //      List<String>assets= krakenData.getUniqueLedgerAssets();
+
                 default:
                     if (errMsg.equals("")) {
                         TradesHistoryResult tresult = krakenParser.parseTradeHistory(responseJson);
                         kd.addTrades(tresult.getResult().getTrades());
                         kd.setAvailableTradeCount(tresult.getResult().getCount());
                         kd.setFetchedTradeOffset(kd.getFetchedTradeOffset() + tresult.getResult().trades.size());
+                        krakenDAO.insertTrades(tresult.getResult().trades,"trades");;
                     }
                     fend.refreshTradesTable(errMsg);
                     return errMsg;
-              //      List<String> pairs=krakenData.getUniqueTradePairs();
             }
 
         } catch (Exception e) {
