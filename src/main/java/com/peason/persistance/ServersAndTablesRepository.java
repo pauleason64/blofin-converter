@@ -35,7 +35,7 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
     private AppConfig appConfig;//= springClasses.getAppConfig();
 
     //@Autowired
-    DAO dao ;//= springClasses.getDao();
+    DAO dao ;
 
     DBServer dbServer;
     Map<String, DBServer> serverMap ;
@@ -46,57 +46,41 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
     public void init() {
         dao = context.getBean(DAO.class);
         appConfig= context.getBean(AppConfig.class);
+        dbServer=context.getBean(DBServer.class);
 
     }
     public static final String emptyColumns = "[]";
 
-    public String getServerNames() {
 
-        List<DBServer> servers = new ArrayList<>();
-        for (DBServer server : serverMap.values()) {
-            servers.add(server);
-        }
-        return gsonHideNonExposed.toJson(servers);
-    }
-
-    public String getTableNames(String serverName) {
-        DBServer server = serverMap.get(serverName);
-        if (null == server) return "";
-        List<DBTable> tables = server.getAvailableTables();
+    public String getTableNames() {
+        List<DBTable> tables = dbServer.getAvailableTables();
         return null == tables ? "[]" : gsonHideNonExposed.toJson(tables);
     }
 
-    public ArrayList<TableColumn> getTableColumnArray(String serverName, String tableName) {
+    public ArrayList<TableColumn> getTableColumnArray( String tableName) {
 
         ArrayList<TableColumn> columns = null;
-        DBServer server = serverMap.get(serverName);
-        DBTable table = server.getTable(tableName);
+        DBTable table = dbServer.getTable(tableName);
         if (table != null) {
             columns = table.getTableColumnList();
         }
         return columns == null ? new ArrayList<>() : columns;
     }
 
-    public String getTableColumns(String serverName, String tableName) {
+    public String getTableColumns( String tableName) {
 
-        ArrayList<TableColumn> columns = getTableColumnArray(serverName, tableName);
+        ArrayList<TableColumn> columns = getTableColumnArray( tableName);
         return columns == null ? emptyColumns : gsonHideNonExposed.toJson(columns);
     }
 
 
     @PostConstruct
     public void setup() {
-        if (!dao.loadTableData()) {
-//            useDummyTables();
-        } else {
-            //do something!
-            serverMap = dao != null ? dao.getDataSources() : new HashMap<>();
-            System.out.println(serverMap);
-        }
+        dao.loadTableData();
     }
 
 
-    public TableRows getTableData(String serverName, String tableName) throws SQLException {
+    public TableRows getTableData( String tableName) throws SQLException {
       //  JSONArray jsonArray=dao.getTableData(serverName,tableName);
         TableRows tr=new TableRows();
 //        for (int i = 0; i < jsonArray.length(); i++) {
@@ -106,10 +90,10 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
         return tr;
     }
 
-    public String insertRow(JSONObject json,String serverName, String tableName) throws SQLException {
+    public String insertRow(JSONObject json, String tableName) throws SQLException {
 
 
-        return dao.insertTableData(json, serverName, tableName);
+        return dao.insertTableData(json,  tableName);
 
     }
 
@@ -120,15 +104,11 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
 
     }
 
-    public String updateRow(JSONArray json,String serverName, String tableName) throws Exception {
+    public String updateRow(JSONArray json, String tableName) throws Exception {
 
 
-        return dao.updateTableData(json, serverName, tableName);
+        return dao.updateTableData(json,  tableName);
 
-    }
-
-    public Map<String, DBServer> getServerMap() {
-        return serverMap;
     }
 
     public static void main(String[] args) {

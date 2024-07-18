@@ -1,5 +1,7 @@
-package com.peason.krakenhandler.data;
+package com.peason.services;
 
+import com.peason.krakenhandler.data.Ledger;
+import com.peason.krakenhandler.data.Trade;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -16,7 +18,6 @@ public class KrakenData {
         return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 
-   // static KrakenData instance;
     //These counts are used during the recursive calls to the apis. They dont necessarily relate to the total available
     //e.g. On first call we will fetch all of them, say 2000 records and keep calling 50 at a time
     //on subsequent update calls we will only fetch the new ones based on dates.
@@ -29,13 +30,8 @@ public class KrakenData {
 
     public KrakenData() {}
 
-    public List<TradesHistoryResult.Trade> tradeList = new ArrayList<>();
-    public List<LedgerHistoryResult.Ledger> ledgerList = new ArrayList<>();
-
-//    public static synchronized KrakenData getInstance() {
-//    if (null==instance) instance=new KrakenData();
-//    return instance;
-//  }
+    public List<Trade> tradeList = new ArrayList<>();
+    public List<Ledger> ledgerList = new ArrayList<>();
 
   public List<String> getUniqueLedgerAssets() {
     if (ledgerList==null) return new ArrayList<String>();
@@ -52,8 +48,8 @@ public class KrakenData {
 }
 
 
-public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger> ledgers) {
-    for (Map.Entry<String, LedgerHistoryResult.Ledger> ledger : ledgers.entrySet()) {
+public void addLedgers(HashMap < String, Ledger> ledgers) {
+    for (Map.Entry<String, Ledger> ledger : ledgers.entrySet()) {
         //changing the key to the date
         ledger.getValue().setLedgerKey(ledger.getKey());
         ledgerList.add(ledger.getValue());
@@ -63,8 +59,8 @@ public void addLedgers(HashMap < String, LedgerHistoryResult.Ledger> ledgers) {
 }
 
 
-public void addTrades(HashMap <String, TradesHistoryResult.Trade> trades ) {
-        for (Map.Entry<String,TradesHistoryResult.Trade> trade : trades.entrySet()) {
+public void addTrades(HashMap <String, Trade> trades ) {
+        for (Map.Entry<String,Trade> trade : trades.entrySet()) {
             trade.getValue().setTradeKey(trade.getKey());
             tradeList.add(trade.getValue());
         }
@@ -72,6 +68,15 @@ public void addTrades(HashMap <String, TradesHistoryResult.Trade> trades ) {
     tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
     }
 
+    public void addTrades(ArrayList <Trade> trades ) {
+        tradeList.addAll(trades);
+        //sort newest first
+        tradeList.sort((a, b)->b.getTime().compareTo(a.getTime()));
+    }
+
+    public void RefreshLedgersFromDB() {
+      ArrayList<Map,Object> ledgersAsObject =
+    }
     public long getAvailableLedgerCount() {
         return availableLedgerCount;
     }
