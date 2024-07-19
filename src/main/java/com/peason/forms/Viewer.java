@@ -1,15 +1,13 @@
 package com.peason.forms;
 
 import com.peason.blofin2koinly.TableUtils;
-import com.peason.databasetables.Ledger;
-import com.peason.databasetables.LedgerHistoryResult;
-import com.peason.databasetables.Trade;
-import com.peason.databasetables.USERPROFILE;
+import com.peason.databasetables.*;
 import com.peason.krakenhandler.api.KrakenAPI;
 import com.peason.krakenhandler.data.*;
 import com.peason.model.AppConfig;
 import com.peason.persistance.KrakenData;
 import com.peason.persistance.ServersAndTablesRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +30,10 @@ import java.time.format.DateTimeFormatter;
 @org.springframework.stereotype.Component("viewer")
 //@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
 //@ComponentScan(basePackages = {"com.peason.*"})
-public class FrontEnd extends JPanel implements ApplicationContextAware, InitializingBean {
+public class Viewer extends JPanel implements ApplicationContextAware, InitializingBean {
 
+    private SOURCES source;
+    private USERPROFILE userprofile;
     private JTextArea statusTextArea;
     public boolean isRunning = false;
     JPanel topPanel;
@@ -45,8 +45,11 @@ public class FrontEnd extends JPanel implements ApplicationContextAware, Initial
     private ApplicationContext context;
     private Mainframe mainframe;
 
+    @Autowired
     KrakenAPI krakenAPI ;
+    @Autowired
     ServersAndTablesRepository serversAndTablesRepository;
+    @Autowired
     AppConfig appConfig;
 
     @Autowired
@@ -55,15 +58,10 @@ public class FrontEnd extends JPanel implements ApplicationContextAware, Initial
     private static DefaultTableModel ledgerTable;
     private DefaultTableModel tradesTable;
 
-    public void show(Mainframe mainFrame) {
-        this.mainframe=mainFrame;
-        mainFrame.setTitle("Crypto Trades Application");
+   // @PostConstruct
+    public void init() {
         setLayout(new BorderLayout());
-        setSize(mainFrame.formsPanel.getBounds().getSize());
-//        setSize(new Dimension(1200, 700));
-//        panel.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Create components
+//        setSize(mainFrame.formsPanel.getBounds().getSize());
         statusTextArea = new JTextArea();
         statusTextArea.setEditable(true);
         JScrollPane scrollPane = new JScrollPane(statusTextArea);
@@ -76,13 +74,17 @@ public class FrontEnd extends JPanel implements ApplicationContextAware, Initial
         this.add(topPanel, BorderLayout.NORTH);
         this.add(centrePanel, BorderLayout.CENTER);
         this.add(bottomPanel, BorderLayout.SOUTH);
-
-        //pack();
-        //panel.setLocationRelativeTo(null);
         krakenAPI.start();
         isRunning = true;
-        this.setVisible(true);
-        mainFrame.formsPanel.add(this);
+    }
+
+    public JPanel show(Mainframe mainFrame) {
+        this.mainframe=mainFrame;
+        this.userprofile=Mainframe.currentUser;
+        this.source=Mainframe.currentSource;
+        this.setBounds(mainFrame.formsPanel.getBounds());
+        mainFrame.setTitle("Crypto Trades Application");
+        return this;
     }
 
     public  void refreshLedgerTable(String errMsg) {
@@ -300,12 +302,12 @@ public class FrontEnd extends JPanel implements ApplicationContextAware, Initial
     }
 
     public static void main(String[] args) {
-        var ctx = new SpringApplicationBuilder(FrontEnd.class)
+        var ctx = new SpringApplicationBuilder(Viewer.class)
                 .headless(false).web(WebApplicationType.NONE).run(args);
 
         EventQueue.invokeLater(() -> {
 
-            var ex = ctx.getBean(FrontEnd.class);
+            var ex = ctx.getBean(Viewer.class);
             ex.setVisible(true);
         });
     }
@@ -322,6 +324,7 @@ public class FrontEnd extends JPanel implements ApplicationContextAware, Initial
     @Override
     public void setApplicationContext(ApplicationContext ctx) throws BeansException {
         context = ctx;
+        init();
     }
 }
 

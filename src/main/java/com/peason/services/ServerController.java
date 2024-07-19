@@ -95,16 +95,5 @@ public class ServerController {
     return new ResponseEntity(response[1],HttpStatus.UNPROCESSABLE_ENTITY);
   }
 
-
-//  public static void main(String[] args) {
-//    ServerController serverC = new ServerController();
-//    serverC.serversAndTablesRepository =new ServersAndTablesRepository();
-//    serverC.serversAndTablesRepository.setup();
-//    serverC.serverList();
-//    serverC.tableList("IL");
-//    serverC.columnList("IL","IL_CONFIG");
-//  }
-
-
 }
 

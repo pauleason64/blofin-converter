@@ -3,7 +3,7 @@ package com.peason.krakenhandler.api;
 import com.peason.databasetables.SOURCES;
 import com.peason.services.KrakenDAO;
 import com.peason.persistance.ServersAndTablesRepository;
-import com.peason.forms.FrontEnd;
+import com.peason.forms.Viewer;
 import com.peason.krakenhandler.data.KrakenParser;
 import com.peason.persistance.KrakenData;
 import com.peason.krakenhandler.data.TradesHistoryResult;
@@ -60,11 +60,11 @@ public class KrakenAPI extends Thread {
 
     //removed autowiring due to circlular dep
 
-    private  FrontEnd fend=null;
+    private Viewer fend=null;
 
     public KrakenAPI(){}
 
-    public void init(FrontEnd fe) {
+    public void init(Viewer fe) {
         this.fend=fe;
     }
 

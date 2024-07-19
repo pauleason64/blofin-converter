@@ -16,6 +16,10 @@ public class SOURCES {
     long ledgerCount;
     boolean autorefresh;
     Date nextRefreshDate;
+    long apiAvailableLedgers =0 ;
+    long apiAvailableTrades =0;
+    long apiFetchedLedgerOffset =0;
+    long apiFetchedTradeOffset =0;
 
     public int getProfileID() {return profileID;}
 
@@ -91,6 +95,38 @@ public class SOURCES {
 
     public boolean isAutorefresh() {
         return autorefresh;
+    }
+
+    public long getApiAvailableLedgers() {
+        return apiAvailableLedgers;
+    }
+
+    public void setApiAvailableLedgers(long apiAvailableLedgers) {
+        this.apiAvailableLedgers = apiAvailableLedgers;
+    }
+
+    public long getApiAvailableTrades() {
+        return apiAvailableTrades;
+    }
+
+    public void setApiAvailableTrades(long apiAvailableTrades) {
+        this.apiAvailableTrades = apiAvailableTrades;
+    }
+
+    public long getApiFetchedLedgerOffset() {
+        return apiFetchedLedgerOffset;
+    }
+
+    public void setApiFetchedLedgerOffset(long apiFetchedLedgerOffset) {
+        this.apiFetchedLedgerOffset = apiFetchedLedgerOffset;
+    }
+
+    public long getApiFetchedTradeOffset() {
+        return apiFetchedTradeOffset;
+    }
+
+    public void setApiFetchedTradeOffset(long apiFetchedTradeOffset) {
+        this.apiFetchedTradeOffset = apiFetchedTradeOffset;
     }
 
     public void setAutorefresh(boolean autorefresh) {

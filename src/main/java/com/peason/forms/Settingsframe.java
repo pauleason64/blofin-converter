@@ -6,10 +6,9 @@ import java.sql.*;
 import com.peason.databasetables.USERPROFILE;
 import com.peason.model.DBServer;
 import com.peason.persistance.ServersAndTablesRepository;
-import com.sun.tools.javac.Main;
+import jakarta.annotation.PostConstruct;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
@@ -19,6 +18,7 @@ import com.peason.services.DAO;
 @Component("settings")
 public class Settingsframe extends JPanel implements ApplicationContextAware {
     private JTextField emailField, usernameField, loginUsernameField;
+    private JButton existingUserButton,createUserButton;
     private JPasswordField passwordField, loginPasswordField;
     private Mainframe mainFrame;
     static ApplicationContext applicationContext;
@@ -31,37 +31,38 @@ public class Settingsframe extends JPanel implements ApplicationContextAware {
         //create instance for reference only
     }
 
-    public void show(Mainframe mainFrame) {
+    @PostConstruct
+    public void init() {
+        dao=applicationContext.getBean(DAO.class);
+        dbServer=applicationContext.getBean(DBServer.class);
+        serversAndTablesRepository=applicationContext.getBean(ServersAndTablesRepository.class);
+        setLayout(new GridLayout(5, 2));
+
+        add(new JLabel("Username:"));
+        usernameField = new JTextField();
+        add(usernameField);
+
+        add(new JLabel("Password:"));
+        passwordField = new JPasswordField();
+        add(passwordField);
+
+        add(new JLabel("Email:"));
+        emailField = new JTextField();
+        add(emailField);
+        JButton createButton = new JButton("Create New Profile");
+        createButton.addActionListener(e -> createUser());
+        add(createButton);
+        existingUserButton = new JButton("login");
+        existingUserButton.addActionListener(e -> mockLogin());
+        //existingUserButton.addActionListener(e -> showLoginDialog(mainFrame));
+        add(existingUserButton);
+    }
+
+    public JPanel show(Mainframe mainFrame) {
             this.mainFrame = mainFrame;
-            dao=applicationContext.getBean(DAO.class);
-            dbServer=applicationContext.getBean(DBServer.class);
-            serversAndTablesRepository=applicationContext.getBean(ServersAndTablesRepository.class);
-            setLayout(new GridLayout(5, 2));
-
-            add(new JLabel("Username:"));
-            usernameField = new JTextField();
-            add(usernameField);
-
-            add(new JLabel("Password:"));
-            passwordField = new JPasswordField();
-            add(passwordField);
-
-            add(new JLabel("Email:"));
-            emailField = new JTextField();
-            add(emailField);
-
-            JButton createButton = new JButton("Create New Profile");
-            createButton.addActionListener(e -> createUser());
-            add(createButton);
-
-            JButton existingUserButton = new JButton("login");
-          //  JButton existingUserButton = new JButton("Existing User");
-            existingUserButton.addActionListener(e -> mockLogin());
-            //existingUserButton.addActionListener(e -> showLoginDialog(mainFrame));
-            add(existingUserButton);
-            this.setVisible(true);
-            mainFrame.formsPanel.add(this);
-            mainFrame.invalidate();
+            this.setBounds(mainFrame.formsPanel.getBounds());
+            existingUserButton.doClick();
+            return this;
         }
 
     private void createUser() {
@@ -114,7 +115,8 @@ public class Settingsframe extends JPanel implements ApplicationContextAware {
             JOptionPane.showMessageDialog(this, "Login successful!");
             mainframe.setUsername(username);
             Mainframe.currentUser=userprofile;
-            mainframe.ShowMainForm(); // Close the settings frame
+            this.setVisible(false);// Close the settings frame
+            mainframe.ShowViewer();
         } else {
             JOptionPane.showMessageDialog(this, "Invalid credentials.");
         }

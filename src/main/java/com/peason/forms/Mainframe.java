@@ -26,18 +26,20 @@ public class Mainframe extends JFrame implements ApplicationContextAware {
 
     static ApplicationContext applicationContext;
     static USERPROFILE currentUser;
-    static List<SOURCES> sourcesList = new ArrayList<SOURCES>();
+    static SOURCES currentSource;
+   // static List<SOURCES> sourcesList = new ArrayList<SOURCES>();
     JPanel welcomeScreen;
     private JLabel usernameLabel;
     private Mainframe home;
     public JPanel formsPanel;
+    public JMenu homeMenu,sourcesMenu,profileMenu;
 
     @Autowired
     @Qualifier("settings")
     Settingsframe settingsframe;
     @Autowired
     @Qualifier("viewer")
-    FrontEnd frontEnd;
+    Viewer viewer;
 
     public Mainframe() {};
 
@@ -52,20 +54,23 @@ public class Mainframe extends JFrame implements ApplicationContextAware {
         JPanel topPanel = new JPanel(new BorderLayout());
         JPanel menuPanel = new JPanel();
         formsPanel = new JPanel(new BorderLayout());
-        formsPanel.add(settingsframe);
         usernameLabel = new JLabel("Username: ");
 
 // Create the menu bar
         JMenuBar menuBar = new JMenuBar();
 
         // Create the main menu
-        JMenu menu = new JMenu("Menu");
-        menuBar.add(menu);
+        homeMenu = new JMenu("Menu");
+        menuBar.add(homeMenu);
+        sourcesMenu = new JMenu("Sources");
+        menuBar.add(sourcesMenu);
+        profileMenu = new JMenu("Profile");
+        menuBar.add(sourcesMenu);
 
         // Create menu items
+        JMenuItem viewerItem = new JMenuItem("viewer");
+        JMenuItem logoutItem = new JMenuItem("Logout");
         JMenuItem settingsItem = new JMenuItem("Settings");
-        JMenuItem frontendItem = new JMenuItem("front-end");
-        JMenuItem option3Item = new JMenuItem("Option 3");
         JMenuItem option4Item = new JMenuItem("Option 4");
 
         // Add action listeners for menu items
@@ -75,37 +80,58 @@ public class Mainframe extends JFrame implements ApplicationContextAware {
                 ShowSettings(); }
         });
 
-        frontendItem.addActionListener (new ActionListener() {
+        viewerItem.addActionListener (new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ShowMainForm(); }
+                ShowViewer(null); }
         });
         // Add similar action listeners for other items
 
         // Add menu items to the menu
-        menu.add(settingsItem);
-        menu.add(frontendItem);
-        menu.add(option3Item);
-        menu.add(option4Item);
-
+        homeMenu.add(viewerItem);
+        profileMenu.add(settingsItem);
+        profileMenu.addSeparator();
+        profileMenu.add(logoutItem);
+        sourcesMenu.setToolTipText("Sources appear here when added via settings");
         // Add the menu bar to the top panel
         topPanel.add(menuBar, BorderLayout.WEST);
         topPanel.add(usernameLabel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
+//        formsPanel.add(settingsframe);
         add(formsPanel, BorderLayout.CENTER);
-        formsPanel.setVisible(true);
+        ShowSettings();
         this.setVisible(true);
-        this.invalidate();
     }
+
+    public void AddSourcesItems(USERPROFILE userprofile) {
+            List<SOURCES> sources = userprofile.getSources();
+
+            for (int i=0; i<sources.size(); i++) {
+                JMenuItem item = new JMenuItem(sources.get(i).getSourceName());
+                int finalI = i;
+                item.addActionListener (new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Mainframe.currentSource=sources.get(finalI);
+                        ShowViewer(); }
+                });
+            }
+    }
+
 
     public void ShowSettings() {
-        removeOldScreens(formsPanel);
-        settingsframe.show(home);
+       // removeOldScreens(formsPanel);
+       // this.revalidate();
+       // this.repaint();
+        formsPanel.add(settingsframe.show(home));
+        formsPanel.setVisible(true);
     }
 
-    public void ShowMainForm() {
+    public void ShowViewer() {
         removeOldScreens(formsPanel);
-        frontEnd.show(home);
+        formsPanel.add(viewer.show(home));
+        formsPanel.setVisible(true);
+        home.repaint();
     }
 
     private void removeOldScreens(JPanel main) {
@@ -140,6 +166,11 @@ public class Mainframe extends JFrame implements ApplicationContextAware {
         welcomeScreen.add(txtArea);
         welcomeScreen.setVisible(true);
         return welcomeScreen;
+    }
+
+    public void ConfigureMenu(USERPROFILE userprofile) {
+        this.usernameLabel.setText(userprofile.getUserName());
+
     }
 
     public static void main(String[] args) {
