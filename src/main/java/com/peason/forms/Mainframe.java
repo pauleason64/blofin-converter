@@ -83,7 +83,7 @@ public class Mainframe extends JFrame implements ApplicationContextAware {
         viewerItem.addActionListener (new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ShowViewer(null); }
+                ShowViewer(); }
         });
         // Add similar action listeners for other items
 
