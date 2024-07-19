@@ -105,7 +105,7 @@ public class ServersAndTablesRepository implements Serializable, ApplicationCont
         return null;
     }
 
-   public USERPROFILE getProfileData(String userName,String password, String email) {
+   public USERPROFILE getProfileData(String userName,String password) {
        if (users.size() == 0) {
            users = dao.getProfileData();
        }

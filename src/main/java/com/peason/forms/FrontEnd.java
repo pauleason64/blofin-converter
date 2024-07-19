@@ -1,4 +1,4 @@
-package com.peason.krakenhandler;
+package com.peason.forms;
 
 import com.peason.blofin2koinly.TableUtils;
 import com.peason.databasetables.Ledger;
@@ -14,14 +14,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.ComponentScan;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -34,27 +29,25 @@ import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@SpringBootApplication   (exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
-@ComponentScan(basePackages = {"com.peason.*"})
-public class FrontEnd extends JFrame implements ApplicationContextAware, InitializingBean {
+@org.springframework.stereotype.Component("viewer")
+//@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
+//@ComponentScan(basePackages = {"com.peason.*"})
+public class FrontEnd extends JPanel implements ApplicationContextAware, InitializingBean {
 
     private JTextArea statusTextArea;
-    private static FrontEnd instance;
     public boolean isRunning = false;
     JPanel topPanel;
     static JPanel centrePanel;
     JPanel bottomPanel;
-    JPanel welcomeScreen;
     JPanel tradesPanel;
     static JPanel ledgerPanel;
     static JTextField textField;
-    JTextArea txtArea;
     private ApplicationContext context;
+    private Mainframe mainframe;
 
     KrakenAPI krakenAPI ;
     ServersAndTablesRepository serversAndTablesRepository;
     AppConfig appConfig;
-    USERPROFILE userprofile;
 
     @Autowired
     KrakenData krakenData ;
@@ -62,19 +55,13 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
     private static DefaultTableModel ledgerTable;
     private DefaultTableModel tradesTable;
 
-    public void init() {
-        updateUI();
-    }
-
-    public void processLogin() {
-        //dummy for now
-        //dao
-    }
-    public void updateUI() {
-        setTitle("Status Application");
+    public void show(Mainframe mainFrame) {
+        this.mainframe=mainFrame;
+        mainFrame.setTitle("Crypto Trades Application");
         setLayout(new BorderLayout());
-        setSize(new Dimension(1200, 700));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(mainFrame.formsPanel.getBounds().getSize());
+//        setSize(new Dimension(1200, 700));
+//        panel.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Create components
         statusTextArea = new JTextArea();
@@ -91,10 +78,11 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         this.add(bottomPanel, BorderLayout.SOUTH);
 
         //pack();
-        setLocationRelativeTo(null);
+        //panel.setLocationRelativeTo(null);
         krakenAPI.start();
         isRunning = true;
         this.setVisible(true);
+        mainFrame.formsPanel.add(this);
     }
 
     public  void refreshLedgerTable(String errMsg) {
@@ -188,7 +176,7 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
     }
 
     public JPanel configureBottomPanel() {
-        JPanel panel = new JPanel(new FlowLayout());
+        JPanel panel = new JPanel(new GridLayout(1,6));
         JButton showLedgerButton = new JButton("Show Ledgers");
         JButton allledgerButton = new JButton("All Ledgers");
         JButton ledgerButton = new JButton("Update Ledgers");
@@ -259,12 +247,12 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
                 refreshTradesTable("");
             }
         });
-        panel.add(ledgerButton, FlowLayout.LEFT);
-        panel.add(showLedgerButton, FlowLayout.LEFT);
-        panel.add(allledgerButton, FlowLayout.CENTER);
-        panel.add(tradesButton, FlowLayout.CENTER);
-        panel.add(alltradesButton, FlowLayout.RIGHT);
-        panel.add(showTradesButton, FlowLayout.RIGHT);
+        panel.add(showLedgerButton);
+        panel.add(ledgerButton);
+        panel.add(allledgerButton);
+        panel.add(alltradesButton);
+        panel.add(tradesButton);
+        panel.add(showTradesButton);
         return panel;
     }
 
@@ -311,29 +299,6 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         return panel;
     }
 
-    public JPanel getWelcomeScreen() {
-        //todo: add menu etc
-        welcomeScreen = new JPanel(new FlowLayout());
-        txtArea = new JTextArea();
-        txtArea.setBounds(this.getBounds());
-        txtArea.setText(" This is a framework for downloading API data from multiple APIs across ,multiple crypto exchanges" +
-                "\n Scope in no particular order is:" +
-                "\n Kraken API - download ledger and trade data" +
-                "\n Bitget API - download ledger and trade data" +
-                "\n Solana wallet transaction data and balances including meme coins" +
-                "\n Bitget API - for historic transactions " +
-                "\n Binance API - for historic transactions " +
-                "\n Display transactions in front-end" +
-                "\n Display net balances across all accounts and exchanges" +
-                "\n Track cost of purchase and cost of disposal to calculate net profit/losses" +
-                "\n create audit logs for YE tax returns to support CGT submissions"
-        );
-        txtArea.setVisible(true);
-        welcomeScreen.add(txtArea);
-        welcomeScreen.setVisible(true);
-        return welcomeScreen;
-    }
-
     public static void main(String[] args) {
         var ctx = new SpringApplicationBuilder(FrontEnd.class)
                 .headless(false).web(WebApplicationType.NONE).run(args);
@@ -351,7 +316,6 @@ public class FrontEnd extends JFrame implements ApplicationContextAware, Initial
         serversAndTablesRepository = context.getBean(ServersAndTablesRepository.class);
         appConfig=context.getBean(AppConfig.class);
         //todo:will move later - need to add login screen
-        userprofile=serversAndTablesRepository.getProfileData(appConfig.getProfileUserName(),null,null);
         krakenAPI.init(this);
     }
 

@@ -3,7 +3,7 @@ package com.peason.krakenhandler.api;
 import com.peason.databasetables.SOURCES;
 import com.peason.services.KrakenDAO;
 import com.peason.persistance.ServersAndTablesRepository;
-import com.peason.krakenhandler.FrontEnd;
+import com.peason.forms.FrontEnd;
 import com.peason.krakenhandler.data.KrakenParser;
 import com.peason.persistance.KrakenData;
 import com.peason.krakenhandler.data.TradesHistoryResult;
