@@ -165,8 +165,8 @@ public class FileConverter {
         //scrollPane.setSize(new Dimension(1184,frame.getHeight()-80));
         table = new JTable(tableModel);
         table.setFillsViewportHeight(true);
-        tableModel.addColumn("Delete");
-        ButtonColumn buttonColumn = new ButtonColumn(table, deleteButton, 0);
+//        tableModel.addColumn("Delete");
+//        ButtonColumn buttonColumn = new ButtonColumn(table, deleteButton, 0);
         String[] cols = FileHandler.TRADECOLS;
 
         for (int i = 0; i < cols.length - 2; i++) {
